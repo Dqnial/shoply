@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
+import { AuthRequest } from "../middleware/authMiddleware.js";
 
 /**
  * @desc    Генерация JWT токена и установка его в HttpOnly Cookie
@@ -82,6 +83,68 @@ export const authUser = async (req: Request, res: Response) => {
     }
   } catch (error) {
     res.status(500).json({ message: "Ошибка сервера при входе" });
+  }
+};
+
+/**
+ * @desc    Получить профиль текущего пользователя
+ * @route   GET /api/users/profile
+ * @access  Private
+ */
+export const getUserProfile = async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.user?._id);
+
+  if (user) {
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      isAdmin: user.isAdmin,
+    });
+  } else {
+    res.status(404).json({ message: "Пользователь не найден" });
+  }
+};
+
+/**
+ * @desc    Обновить профиль пользователя (Настройки)
+ * @route   PUT /api/users/profile
+ * @access  Private
+ */
+export const updateUserProfile = async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.user?._id);
+
+  if (user) {
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+    user.phone = req.body.phone || user.phone;
+    user.image = req.body.image || user.image;
+
+    user.country = req.body.country || user.country;
+    user.city = req.body.city || user.city;
+    user.street = req.body.street || user.street;
+    user.house = req.body.house || user.house;
+
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      image: updatedUser.image,
+      phone: updatedUser.phone,
+      country: updatedUser.country,
+      city: updatedUser.city,
+      street: updatedUser.street,
+      house: updatedUser.house,
+      isAdmin: updatedUser.isAdmin,
+    });
+  } else {
+    res.status(404).json({ message: "Пользователь не найден" });
   }
 };
 

@@ -75,7 +75,7 @@ export default function AdminProductsPage() {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-primary" size={32} />
-        <p className="text-muted-foreground text-sm">Загрузка каталога...</p>
+        <p className="text-muted-foreground text-sm">Загрузка товаров...</p>
       </div>
     );
 
