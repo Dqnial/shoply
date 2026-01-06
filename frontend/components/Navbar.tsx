@@ -12,18 +12,20 @@ import {
   LogOut,
   ChevronDown,
   Loader2,
+  ShieldCheck,
 } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import AuthModal from "./AuthModal";
+import { Button } from "@/components/ui/button"; // Импорт Button
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export default function Navbar() {
   const cartItems = useCartStore((state) => state.cartItems);
@@ -65,28 +67,40 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <button className="cursor-pointer p-3 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all">
-            <Search size={22} />
-          </button>
-
-          <Link
-            href="/favorites"
-            className="p-3 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
           >
-            <Heart size={22} />
-          </Link>
+            <Search className="w-5! h-5!" />
+          </Button>
 
-          <Link
-            href="/cart"
-            className="relative p-3 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            className="cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
           >
-            <ShoppingCart size={22} />
-            {cartCount > 0 && (
-              <span className="absolute top-2 right-2 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold border-2 border-background">
-                {cartCount}
-              </span>
-            )}
-          </Link>
+            <Link href="/favorites">
+              <Heart className="w-5! h-5!" />
+            </Link>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            className="relative cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+          >
+            <Link href="/cart">
+              <ShoppingCart className="w-5! h-5!" />
+              {cartCount > 0 && (
+                <span className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold border border-background">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </Button>
 
           <div className="h-6 w-[1px] bg-border mx-2 hidden md:block" />
 
@@ -97,15 +111,26 @@ export default function Navbar() {
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 pl-2 pr-4 py-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-2xl transition-all outline-none group">
+                <Button
+                  variant="outline"
+                  className="flex cursor-pointer items-center gap-2 pl-2 pr-4 py-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-2xl transition-all outline-none group h-auto"
+                >
                   <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
                     <User size={18} />
                   </div>
                   <div className="flex flex-col items-start hidden md:flex max-w-[120px]">
-                    <span className="text-xs font-bold leading-none truncate w-full text-left">
-                      {user.name || "Пользователь"}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground truncate w-full">
+                    <div className="flex flex-row gap-2 items-center w-full">
+                      <span className="text-xs font-bold leading-none truncate text-left">
+                        {user.name || "Пользователь"}
+                      </span>
+                      {user.isAdmin && (
+                        <span className="bg-primary/10 text-primary text-[8px] px-1.5 py-0.5 rounded-md border border-primary/20 uppercase tracking-tighter shrink-0">
+                          Admin
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="text-[10px] text-muted-foreground truncate w-full text-left">
                       {user.email}
                     </span>
                   </div>
@@ -113,7 +138,7 @@ export default function Navbar() {
                     size={14}
                     className="text-muted-foreground group-data-[state=open]:rotate-180 transition-transform"
                   />
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
@@ -152,13 +177,32 @@ export default function Navbar() {
                       <span className="font-medium text-sm">Настройки</span>
                     </Link>
                   </DropdownMenuItem>
+                  {user.isAdmin && (
+                    <DropdownMenuItem
+                      asChild
+                      className="rounded-xl focus:bg-primary/5 cursor-pointer px-3 py-2.5 transition-colors"
+                    >
+                      <Link href="/admin" className="flex items-center gap-3">
+                        <ShieldCheck
+                          size={16}
+                          className="text-muted-foreground"
+                        />
+                        <span className="font-medium text-sm">
+                          Админ-панель
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                 </div>
 
                 <DropdownMenuSeparator className="opacity-50" />
 
                 <div className="p-1">
                   <DropdownMenuItem
-                    onClick={() => logout()}
+                    onClick={() => {
+                      logout();
+                      toast.success("Вы успешно вышли из аккаунта");
+                    }}
                     className="rounded-xl focus:bg-destructive/5 cursor-pointer px-3 py-2.5 text-destructive focus:text-destructive transition-colors"
                   >
                     <div className="flex items-center gap-3 w-full font-semibold text-sm">
@@ -173,9 +217,13 @@ export default function Navbar() {
             <AuthModal />
           )}
 
-          <button className="md:hidden p-3 text-muted-foreground hover:bg-primary/5 rounded-2xl transition-all">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden cursor-pointer p-3 text-muted-foreground hover:bg-primary/5 rounded-2xl transition-all"
+          >
             <Menu size={22} />
-          </button>
+          </Button>
         </div>
       </div>
     </nav>

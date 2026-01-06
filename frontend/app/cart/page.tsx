@@ -43,11 +43,12 @@ export default function CartPage() {
         <p className="text-muted-foreground mb-8">
           Самое время добавить в неё что-нибудь интересное
         </p>
-        <Link href="/">
-          <Button className="rounded-xl px-8 h-12 font-bold uppercase tracking-widest text-xs">
-            Перейти к покупкам
-          </Button>
-        </Link>
+        <Button
+          asChild
+          className="rounded-xl px-8 h-12 font-bold uppercase tracking-widest text-xs"
+        >
+          <Link href="/">Перейти к покупкам</Link>
+        </Button>
       </div>
     );
   }
@@ -59,7 +60,7 @@ export default function CartPage() {
           Корзина
         </h1>
         <span className="text-muted-foreground font-medium mb-1">
-          ({cartItems.length} товара)
+          ({cartItems.length} {cartItems.length !== 1 ? "товара" : "товар"})
         </span>
       </div>
 
@@ -89,13 +90,14 @@ export default function CartPage() {
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center bg-secondary/50 rounded-lg border border-border/40 p-0.5">
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleQtyChange(item, item.qty - 1)}
-                      className="w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground active:scale-90"
+                      className="cursor-pointer w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground active:scale-90"
                     >
                       <Minus size={14} />
-                    </button>
+                    </Button>
 
                     <input
                       type="number"
@@ -105,13 +107,14 @@ export default function CartPage() {
                       className="w-9 bg-transparent text-center text-sm font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
 
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleQtyChange(item, item.qty + 1)}
-                      className="w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground active:scale-90"
+                      className="cursor-pointer w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground active:scale-90"
                     >
                       <Plus size={14} />
-                    </button>
+                    </Button>
                   </div>
                   <span className="font-black text-foreground">
                     {(item.price * item.qty).toLocaleString()} ₸
@@ -122,7 +125,7 @@ export default function CartPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-xl hover:bg-destructive/10 hover:text-destructive transition-colors"
+                className="cursor-pointer rounded-xl hover:bg-destructive/10 hover:text-destructive transition-colors"
                 onClick={() => removeItem(item._id)}
               >
                 <Trash2 size={20} />
@@ -157,7 +160,7 @@ export default function CartPage() {
             </div>
           </div>
 
-          <Button className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest text-xs group shadow-xl shadow-primary/20 transition-all active:scale-[0.98]">
+          <Button className="cursor-pointer w-full h-14 rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest text-xs group shadow-xl shadow-primary/20 transition-all active:scale-[0.98]">
             Оформить заказ
             <ArrowRight
               size={16}

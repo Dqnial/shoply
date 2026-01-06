@@ -96,7 +96,7 @@ export default async function HomePage() {
             },
           ].map((cat, i) => (
             <Link
-              href={`/catalog?cat=${cat.name}`}
+              href={`/catalog?category=${cat.name}`}
               key={i}
               className="group p-8 rounded-3xl bg-card border border-border hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 transition-all"
             >
@@ -121,13 +121,16 @@ export default async function HomePage() {
           </div>
           <Button
             variant="ghost"
+            asChild
             className="gap-2 group text-primary hover:text-primary hover:bg-primary/10 cursor-pointer"
           >
-            Смотреть все
-            <ChevronRight
-              size={18}
-              className="group-hover:translate-x-1 transition-transform"
-            />
+            <Link href="/catalog">
+              Смотреть все
+              <ChevronRight
+                size={18}
+                className="group-hover:translate-x-1 transition-transform"
+              />
+            </Link>
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

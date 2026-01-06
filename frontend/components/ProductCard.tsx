@@ -5,6 +5,7 @@ import { Product } from "@/types";
 import { ShoppingCart, Heart } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/store/useCartStore";
+import { toast } from "sonner";
 
 export default function ProductCard({ product }: { product: Product }) {
   const imageUrl = `http://localhost:5000${product.image}`;
@@ -13,6 +14,9 @@ export default function ProductCard({ product }: { product: Product }) {
     e.preventDefault();
     e.stopPropagation();
     addItem({ ...product, qty: 1 });
+    toast.success("Товар добавлен в корзину!", {
+      description: product.name,
+    });
   };
 
   return (
@@ -33,7 +37,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {product.countInStock === 0 && (
           <div className="absolute top-2.5 left-2.5 z-20 bg-background/90 backdrop-blur-sm text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border border-border shadow-sm">
-            Sold Out
+            Нет в наличии
           </div>
         )}
 

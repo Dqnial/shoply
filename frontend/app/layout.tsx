@@ -4,6 +4,8 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AuthInitializer from "@/components/AuthInitializer";
+import { Toaster } from "sonner";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -24,9 +26,17 @@ export default function RootLayout({
     <html lang="ru" className={inter.className}>
       <body>
         <AuthInitializer>
-          <Navbar />
-          <main className="flex-grow">{children}</main>
-          <Footer />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Toaster />
+            <Navbar />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+          </ThemeProvider>
         </AuthInitializer>
       </body>
     </html>

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; // Импорт Button
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -36,13 +37,15 @@ export default function AuthModal() {
     try {
       if (mode === "login") {
         await login({ email: formData.email, password: formData.password });
+        toast.success("Успешный вход!");
       } else {
         await register(formData);
+        toast.success("Аккаунт успешно создан!");
       }
       setOpen(false);
       setFormData({ name: "", email: "", password: "" });
-    } catch (err) {
-      // Ошибка в сторе
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Произошла ошибка");
     }
   };
 
@@ -55,12 +58,15 @@ export default function AuthModal() {
       }}
     >
       <DialogTrigger asChild>
-        <button className="p-2.5 text-muted-foreground hover:text-foreground transition-colors outline-none">
-          <User size={20} />
-        </button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+        >
+          <User className="w-5! h-5!" />
+        </Button>
       </DialogTrigger>
 
-      {/* Скругления уменьшены до 1.5rem (xl-2xl), убрана лишняя тяжесть */}
       <DialogContent className="sm:max-w-[380px] rounded-2xl border-border bg-card p-6 gap-6 shadow-xl">
         <DialogHeader className="space-y-1.5">
           <DialogTitle className="text-2xl font-bold tracking-tight text-foreground">
@@ -161,12 +167,13 @@ export default function AuthModal() {
           <p className="text-sm text-muted-foreground font-medium">
             {mode === "login" ? "Нет аккаунта?" : "Уже есть аккаунт?"}
           </p>
-          <button
+          <Button
+            variant="link"
             onClick={handleSwitchMode}
-            className="cursor-pointer text-sm text-primary hover:underline hover:underline-offset-4 transition-all font-semibold"
+            className="cursor-pointer p-0 h-auto text-sm text-primary hover:underline hover:underline-offset-4 transition-all font-semibold"
           >
-            {mode === "login" ? "Зарегистрироваться" : "Войти в профиль"}
-          </button>
+            {mode === "login" ? "Зарегистрироваться" : "Войти"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

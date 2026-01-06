@@ -16,9 +16,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function ProductPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const addItem = useCartStore((state) => state.addItem);
 
@@ -39,12 +41,13 @@ export default function ProductPage() {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-8 transition-colors font-medium"
+      <Button
+        variant="ghost"
+        onClick={() => router.back()}
+        className="cursor-pointer inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-8 transition-colors font-medium"
       >
-        <ChevronLeft size={20} /> Назад к покупкам
-      </Link>
+        <ChevronLeft size={20} /> Назад
+      </Button>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-card p-6 md:p-10 rounded-3xl border border-border shadow-sm">
         <div className="relative h-[400px] md:h-[600px] bg-secondary/50 rounded-2xl overflow-hidden border border-border/50">
