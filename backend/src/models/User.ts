@@ -21,7 +21,7 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     isAdmin: { type: Boolean, default: false },
-    image: { type: String, default: "/images/default-avatar.png" },
+    image: { type: String, default: "/uploads/default-avatar.png" },
     phone: { type: String },
     country: { type: String },
     city: { type: String },

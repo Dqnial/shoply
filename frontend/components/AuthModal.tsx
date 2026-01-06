@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Button } from "@/components/ui/button"; // Импорт Button
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -14,38 +14,52 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Loader2, AlertCircle } from "lucide-react";
+import { User, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 export default function AuthModal() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
   const { login, register, isAuthLoading, error, clearError } = useAuthStore();
 
   const handleSwitchMode = () => {
     setMode(mode === "login" ? "register" : "login");
+    setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+    setShowPassword(false);
     clearError();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (mode === "register" && formData.password !== formData.confirmPassword) {
+      toast.error("Пароли не совпадают!");
+      return;
+    }
+
     try {
       if (mode === "login") {
         await login({ email: formData.email, password: formData.password });
         toast.success("Успешный вход!");
       } else {
-        await register(formData);
+        await register({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        });
         toast.success("Аккаунт успешно создан!");
       }
       setOpen(false);
-      setFormData({ name: "", email: "", password: "" });
+      setFormData({ name: "", email: "", password: "", confirmPassword: "" });
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Произошла ошибка");
+      toast.error(err?.message || "Произошла ошибка");
     }
   };
 
@@ -54,7 +68,10 @@ export default function AuthModal() {
       open={open}
       onOpenChange={(val) => {
         setOpen(val);
-        if (!val) clearError();
+        if (!val) {
+          clearError();
+          setShowPassword(false);
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -135,18 +152,49 @@ export default function AuthModal() {
             >
               Пароль
             </Label>
-            <Input
-              id="password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              placeholder="••••••••"
-              className="rounded-lg border-border h-10 text-sm focus-visible:ring-1"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                placeholder="••••••••"
+                className="rounded-lg border-border h-10 text-sm focus-visible:ring-1 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+              >
+                {!showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
+
+          {mode === "register" && (
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="confirmPassword"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80"
+              >
+                Подтверждение
+              </Label>
+              <Input
+                id="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                required
+                value={formData.confirmPassword}
+                onChange={(e) =>
+                  setFormData({ ...formData, confirmPassword: e.target.value })
+                }
+                placeholder="••••••••"
+                className="rounded-lg border-border h-10 text-sm focus-visible:ring-1"
+              />
+            </div>
+          )}
 
           <Button
             type="submit"

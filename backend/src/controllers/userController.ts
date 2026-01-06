@@ -100,6 +100,12 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
+      phone: user.phone,
+      image: user.image,
+      country: user.country,
+      city: user.city,
+      street: user.street,
+      house: user.house,
     });
   } else {
     res.status(404).json({ message: "Пользователь не найден" });

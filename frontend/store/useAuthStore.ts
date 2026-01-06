@@ -1,17 +1,24 @@
 import { create } from "zustand";
-import api from "@/lib/axios";
+import { userApi } from "@/lib/axios";
 
 interface User {
   _id: string;
   name: string;
   email: string;
   isAdmin: boolean;
+  phone?: string;
+  country?: string;
+  city?: string;
+  street?: string;
+  house?: string;
+  image?: string;
 }
 
 interface AuthFormData {
   name?: string;
-  email: string;
+  email?: string;
   password?: string;
+  confirmPassword?: string;
 }
 
 interface AuthState {
@@ -25,6 +32,7 @@ interface AuthState {
   login: (data: AuthFormData) => Promise<void>;
   register: (data: AuthFormData) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: Partial<User> & { password?: string }) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -43,7 +51,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
-      const { data } = await api.get<User>("/users/profile");
+      const { data } = await userApi.getProfile();
       set({ user: data, isAuthChecked: true });
     } catch {
       set({ user: null, isAuthChecked: true });
@@ -55,7 +63,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (formData) => {
     set({ isAuthLoading: true, error: null });
     try {
-      const { data } = await api.post<User>("/users/login", formData);
+      const { data } = await userApi.login(formData);
       set({ user: data, isAuthChecked: true });
     } catch (err: any) {
       const msg = err.response?.data?.message || "Ошибка входа";
@@ -69,7 +77,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (formData) => {
     set({ isAuthLoading: true, error: null });
     try {
-      const { data } = await api.post<User>("/users/register", formData);
+      const { data } = await userApi.register(formData);
       set({ user: data, isAuthChecked: true });
     } catch (err: any) {
       const msg = err.response?.data?.message || "Ошибка регистрации";
@@ -83,8 +91,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     set({ isAuthLoading: true });
     try {
-      await api.post("/users/logout");
+      await userApi.logout();
       set({ user: null, isAuthChecked: true });
+    } finally {
+      set({ isAuthLoading: false });
+    }
+  },
+
+  updateProfile: async (formData) => {
+    set({ isAuthLoading: true, error: null });
+    try {
+      const { data } = await userApi.updateProfile(formData);
+      set({ user: data });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Ошибка обновления профиля";
+      set({ error: msg });
+      throw new Error(msg);
     } finally {
       set({ isAuthLoading: false });
     }
