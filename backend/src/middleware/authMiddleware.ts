@@ -4,6 +4,7 @@ import User, { IUser } from "../models/User.js";
 
 export interface AuthRequest extends Request {
   user?: IUser | null;
+  [key: string]: any;
 }
 
 export const protect = async (
