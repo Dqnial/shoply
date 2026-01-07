@@ -12,6 +12,7 @@ const generateToken = (res: Response, userId: string): void => {
     httpOnly: true,
     secure: true,
     sameSite: "none",
+    partitioned: true,
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 };
