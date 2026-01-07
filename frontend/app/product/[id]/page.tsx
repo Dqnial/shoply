@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import api from "@/lib/axios";
+import api, { API_URL } from "@/lib/axios";
 import { Product } from "@/types";
 import { useCartStore } from "@/store/useCartStore";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export default function ProductPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-card p-6 md:p-10 rounded-3xl border border-border shadow-sm">
         <div className="relative h-[400px] md:h-[600px] bg-secondary/50 rounded-2xl overflow-hidden border border-border/50">
           <Image
-            src={`http://localhost:5000${product.image}`}
+            src={`${API_URL}${product.image}`}
             alt={product.name}
             fill
             className="object-contain p-10 transition-transform duration-500 hover:scale-105"

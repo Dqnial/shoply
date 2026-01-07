@@ -1,5 +1,5 @@
 import path from "path";
-import express from "express";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -16,7 +16,7 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -32,7 +32,7 @@ const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
 // Базовый роут для проверки сервера
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
   res.send("API is running...");
 });
 

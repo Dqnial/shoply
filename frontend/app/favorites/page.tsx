@@ -5,6 +5,7 @@ import { Heart, ShoppingBag, HeartOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { API_URL } from "@/lib/axios";
 
 export default function FavoritesPage() {
   const { favorites, removeFromFavorites } = useFavoriteStore();
@@ -54,7 +55,7 @@ export default function FavoritesPage() {
           >
             <div className="relative aspect-square bg-secondary/40 p-6 overflow-hidden">
               <Image
-                src={`http://localhost:5000${product.image}`}
+                src={`${API_URL}${product.image}`}
                 alt={product.name}
                 fill
                 className="object-contain p-4 transition-transform group-hover:scale-110"

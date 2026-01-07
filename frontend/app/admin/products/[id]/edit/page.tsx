@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { adminApi } from "@/lib/axios";
+import { adminApi, API_URL } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -224,7 +224,7 @@ export default function EditProductPage({
                       src={
                         formData.image.startsWith("http")
                           ? formData.image
-                          : `http://localhost:5000${formData.image}`
+                          : `${API_URL}${formData.image}`
                       }
                       className="w-full h-full object-cover shadow-inner"
                       alt="Превью"

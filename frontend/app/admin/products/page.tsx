@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { adminApi } from "@/lib/axios";
+import { adminApi, API_URL } from "@/lib/axios";
 import {
   Table,
   TableBody,
@@ -151,7 +151,7 @@ export default function AdminProductsPage() {
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg border bg-background overflow-hidden shadow-sm">
                       {product.image ? (
                         <img
-                          src={`http://localhost:5000${product.image}`}
+                          src={`${API_URL}${product.image}`}
                           alt={product.name}
                           className="h-full w-full object-cover"
                         />

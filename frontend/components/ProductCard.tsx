@@ -8,9 +8,10 @@ import { useCartStore } from "@/store/useCartStore";
 import { useFavoriteStore } from "@/store/useFavoriteStore"; // Импортируем стор
 import { toast } from "sonner";
 import { cn } from "@/lib/utils"; // Для удобной работы с классами
+import { API_URL } from "@/lib/axios";
 
 export default function ProductCard({ product }: { product: Product }) {
-  const imageUrl = `http://localhost:5000${product.image}`;
+  const imageUrl = `${API_URL}${product.image}`;
   const addItem = useCartStore((state) => state.addItem);
 
   // Подключаем функции избранного

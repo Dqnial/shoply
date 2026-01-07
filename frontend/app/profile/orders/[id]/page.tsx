@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import api from "@/lib/axios";
+import api, { API_URL } from "@/lib/axios";
 import {
   Package,
   MapPin,
@@ -85,7 +85,7 @@ export default function OrderDetailsPage() {
               >
                 <div className="relative w-24 h-24 bg-secondary/40 rounded-xl overflow-hidden flex-shrink-0">
                   <Image
-                    src={`http://localhost:5000${item.image}`}
+                    src={`${API_URL}${item.image}`}
                     alt={item.name}
                     fill
                     className="object-contain p-2"

@@ -11,7 +11,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import api from "@/lib/axios";
+import api, { API_URL } from "@/lib/axios";
 import Image from "next/image";
 
 export function SearchModal({ children }: { children: React.ReactNode }) {
@@ -102,7 +102,7 @@ export function SearchModal({ children }: { children: React.ReactNode }) {
                 >
                   <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-secondary/50 flex-shrink-0 overflow-hidden border border-border/50">
                     <Image
-                      src={`http://localhost:5000${product.image}`}
+                      src={`${API_URL}${product.image}`}
                       alt={product.name}
                       fill
                       className="object-contain p-2 transition-transform group-hover:scale-110"

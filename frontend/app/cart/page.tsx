@@ -18,7 +18,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import api from "@/lib/axios";
+import api, { API_URL } from "@/lib/axios";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -165,7 +165,7 @@ export default function CartPage() {
             >
               <div className="relative w-24 h-24 bg-secondary/50 rounded-xl overflow-hidden flex-shrink-0">
                 <Image
-                  src={`http://localhost:5000${item.image}`}
+                  src={`${API_URL}${item.image}`}
                   alt={item.name}
                   unoptimized
                   fill
