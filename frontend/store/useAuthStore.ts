@@ -6,6 +6,8 @@ interface User {
   name: string;
   email: string;
   isAdmin: boolean;
+  createdAt: Date;
+  balance: number;
   phone?: string;
   country?: string;
   city?: string;
@@ -33,6 +35,7 @@ interface AuthState {
   register: (data: AuthFormData) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User> & { password?: string }) => Promise<void>;
+  updateBalance: (newBalance: number) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -45,11 +48,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   checkAuth: async () => {
-    if (get().isAuthChecked) {
-      set({ isChecking: false });
-      return;
-    }
-
     try {
       const { data } = await userApi.getProfile();
       set({ user: data, isAuthChecked: true });
@@ -110,5 +108,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } finally {
       set({ isAuthLoading: false });
     }
+  },
+
+  updateBalance: (newBalance) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, balance: newBalance } : null,
+    }));
   },
 }));

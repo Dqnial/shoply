@@ -19,12 +19,26 @@ const orderSchema = new mongoose.Schema(
     shippingAddress: {
       address: { type: String, required: true },
       city: { type: String, required: true },
+      postalCode: { type: String },
+      country: { type: String },
+    },
+    paymentMethod: {
+      type: String,
+      required: true,
+      enum: ["Balance", "Card"],
+      default: "Balance",
     },
     totalPrice: { type: Number, required: true, default: 0.0 },
     isPaid: { type: Boolean, required: true, default: false },
     paidAt: { type: Date },
     isDelivered: { type: Boolean, required: true, default: false },
     deliveredAt: { type: Date },
+    status: {
+      type: String,
+      required: true,
+      enum: ["В обработке", "Оплачен", "Доставляется", "Завершен", "Отменен"],
+      default: "В обработке",
+    },
   },
   { timestamps: true }
 );

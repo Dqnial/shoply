@@ -25,19 +25,19 @@ export default function RootLayout({
   return (
     <html lang="ru" className={inter.className}>
       <body>
+        {/* <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        > */}
         <AuthInitializer>
-          {/* <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          > */}
           <Toaster />
           <Navbar />
           <main className="flex-grow">{children}</main>
           <Footer />
-          {/* </ThemeProvider> */}
         </AuthInitializer>
+        {/* </ThemeProvider> */}
       </body>
     </html>
   );

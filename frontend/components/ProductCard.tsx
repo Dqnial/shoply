@@ -5,11 +5,19 @@ import { Product } from "@/types";
 import { ShoppingCart, Heart } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/store/useCartStore";
+import { useFavoriteStore } from "@/store/useFavoriteStore"; // Импортируем стор
 import { toast } from "sonner";
+import { cn } from "@/lib/utils"; // Для удобной работы с классами
 
 export default function ProductCard({ product }: { product: Product }) {
   const imageUrl = `http://localhost:5000${product.image}`;
   const addItem = useCartStore((state) => state.addItem);
+
+  // Подключаем функции избранного
+  const { addToFavorites, removeFromFavorites, isFavorite } =
+    useFavoriteStore();
+  const favorite = isFavorite(product._id);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -17,6 +25,21 @@ export default function ProductCard({ product }: { product: Product }) {
     toast.success("Товар добавлен в корзину!", {
       description: product.name,
     });
+  };
+
+  const handleFavoriteToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (favorite) {
+      removeFromFavorites(product._id);
+      toast.info("Удалено из избранного");
+    } else {
+      addToFavorites(product);
+      toast.success("Добавлено в избранное!", {
+        icon: <Heart size={14} className="fill-current" />,
+      });
+    }
   };
 
   return (
@@ -41,10 +64,20 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         )}
 
+        {/* Кнопки действий */}
         <div className="absolute top-2.5 right-2.5 z-20 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-[-4px] group-hover:translate-y-0">
-          <button className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-full bg-background border border-border text-foreground shadow-sm transition-colors hover:text-destructive active:scale-90">
-            <Heart size={16} />
+          <button
+            onClick={handleFavoriteToggle}
+            className={cn(
+              "cursor-pointer flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-all active:scale-90",
+              favorite
+                ? "bg-primary border-primary text-primary-foreground"
+                : "bg-background border-border text-foreground hover:text-destructive"
+            )}
+          >
+            <Heart size={16} className={cn(favorite && "fill-current")} />
           </button>
+
           <button
             onClick={handleAddToCart}
             disabled={product.countInStock === 0}
@@ -73,6 +106,7 @@ export default function ProductCard({ product }: { product: Product }) {
           </span>
 
           <button
+            onClick={handleAddToCart}
             disabled={product.countInStock === 0}
             className="md:hidden text-primary transition-transform active:scale-90"
           >

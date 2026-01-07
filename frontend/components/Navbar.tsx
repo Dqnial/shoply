@@ -13,11 +13,12 @@ import {
   ChevronDown,
   Loader2,
   ShieldCheck,
+  Wallet,
 } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import AuthModal from "./AuthModal";
-import { Button } from "@/components/ui/button"; // Импорт Button
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,12 +27,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import Image from "next/image";
+import { SearchModal } from "./SearchModal";
 
 export default function Navbar() {
   const cartItems = useCartStore((state) => state.cartItems);
   const { user, logout, isChecking, isAuthChecked } = useAuthStore();
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
+
+  const getInitials = (name: string) => name?.charAt(0).toUpperCase() || "U";
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
@@ -67,13 +72,15 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
-          >
-            <Search className="w-5! h-5!" />
-          </Button>
+          <SearchModal>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+            >
+              <Search className="w-5! h-5!" />
+            </Button>
+          </SearchModal>
 
           <Button
             variant="ghost"
@@ -115,8 +122,27 @@ export default function Navbar() {
                   variant="outline"
                   className="flex cursor-pointer items-center gap-2 pl-2 pr-4 py-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-2xl transition-all outline-none group h-auto"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
-                    <User size={18} />
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 font-bold text-xs overflow-hidden relative ${
+                      !(
+                        user.image && !user.image.includes("default-avatar.png")
+                      )
+                        ? "bg-primary"
+                        : ""
+                    }`}
+                  >
+                    {user.image &&
+                    !user.image.includes("default-avatar.png") ? (
+                      <Image
+                        src={user.image}
+                        alt={user.name}
+                        fill
+                        className="object-cover rounded-xl"
+                        unoptimized
+                      />
+                    ) : (
+                      getInitials(user.name).toUpperCase()
+                    )}
                   </div>
                   <div className="flex flex-col items-start hidden md:flex max-w-[120px]">
                     <div className="flex flex-row gap-2 items-center w-full">
@@ -130,9 +156,12 @@ export default function Navbar() {
                       )}
                     </div>
 
-                    <span className="text-[10px] text-muted-foreground truncate w-full text-left">
-                      {user.email}
-                    </span>
+                    <div className="flex items-center gap-1 text-primary">
+                      <Wallet size={10} />
+                      <span className="text-[10px] font-bold">
+                        {user.balance?.toLocaleString()} ₸
+                      </span>
+                    </div>
                   </div>
                   <ChevronDown
                     size={14}
@@ -144,16 +173,22 @@ export default function Navbar() {
                 align="end"
                 className="w-56 rounded-2xl p-1.5 bg-card border-border shadow-xl overflow-hidden"
               >
+                <div className="px-3 py-2 mb-1 bg-primary/5 rounded-xl">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                    Баланс
+                  </span>
+                  <span className="text-sm font-black text-primary">
+                    {user.balance?.toLocaleString()} ₸
+                  </span>
+                </div>
+
                 <div className="p-1 space-y-0.5">
                   <DropdownMenuItem
                     asChild
                     className="rounded-xl focus:bg-primary/5 cursor-pointer px-3 py-2.5 transition-colors"
                   >
                     <Link href="/profile" className="flex items-center gap-3">
-                      <User
-                        size={16}
-                        className="text-muted-foreground group-hover:text-primary"
-                      />
+                      <User size={16} className="text-muted-foreground" />
                       <span className="font-medium text-sm">Профиль</span>
                     </Link>
                   </DropdownMenuItem>
@@ -162,7 +197,10 @@ export default function Navbar() {
                     asChild
                     className="rounded-xl focus:bg-primary/5 cursor-pointer px-3 py-2.5 transition-colors"
                   >
-                    <Link href="/orders" className="flex items-center gap-3">
+                    <Link
+                      href="/profile/orders"
+                      className="flex items-center gap-3"
+                    >
                       <Package size={16} className="text-muted-foreground" />
                       <span className="font-medium text-sm">Мои заказы</span>
                     </Link>
@@ -172,11 +210,15 @@ export default function Navbar() {
                     asChild
                     className="rounded-xl focus:bg-primary/5 cursor-pointer px-3 py-2.5 transition-colors"
                   >
-                    <Link href="/settings" className="flex items-center gap-3">
+                    <Link
+                      href="/profile/settings"
+                      className="flex items-center gap-3"
+                    >
                       <Settings size={16} className="text-muted-foreground" />
                       <span className="font-medium text-sm">Настройки</span>
                     </Link>
                   </DropdownMenuItem>
+
                   {user.isAdmin && (
                     <DropdownMenuItem
                       asChild

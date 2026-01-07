@@ -6,12 +6,14 @@ export interface IUser extends Document {
   email: string;
   password: string;
   isAdmin: boolean;
+  createdAt: Date;
   image?: string;
   phone?: string;
   country?: string;
   city?: string;
   street?: string;
   house?: string;
+  balance: number;
   matchPassword: (password: string) => Promise<boolean>;
 }
 
@@ -27,13 +29,12 @@ const userSchema = new Schema<IUser>(
     city: { type: String },
     street: { type: String },
     house: { type: String },
+    balance: { type: Number, required: true, default: 0 },
   },
   { timestamps: true }
 );
 
-// ИСПРАВЛЕНИЕ: Убираем next и используем просто async функцию
 userSchema.pre<IUser>("save", async function (this: IUser) {
-  // Если пароль не был изменен, выходим из функции
   if (!this.isModified("password")) {
     return;
   }
@@ -42,7 +43,6 @@ userSchema.pre<IUser>("save", async function (this: IUser) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error: any) {
-    // В асинхронных функциях ошибки выбрасываются через throw
     throw error;
   }
 });

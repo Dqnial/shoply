@@ -3,51 +3,39 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import { AuthRequest } from "../middleware/authMiddleware.js";
 
-/**
- * @desc    Генерация JWT токена и установка его в HttpOnly Cookie
- * @param   res - Объект ответа Express
- * @param   userId - ID пользователя для полезной нагрузки (payload) токена
- */
 const generateToken = (res: Response, userId: string): void => {
-  // Создаем токен, подписываем его секретом из .env
   const token = jwt.sign({ userId }, process.env.JWT_SECRET!, {
-    expiresIn: "30d", // Токен будет валиден 30 дней
+    expiresIn: "30d",
   });
 
-  // Устанавливаем куку с токеном
   res.cookie("jwt", token, {
-    httpOnly: true, // Кука недоступна для JS в браузере (защита от XSS)
-    secure: process.env.NODE_ENV !== "development", // Только HTTPS в продакшене
-    sameSite: "strict", // Защита от CSRF атак
-    maxAge: 30 * 24 * 60 * 60 * 1000, // Срок жизни куки (в мс) - 30 дней
+    httpOnly: true,
+    secure: process.env.NODE_ENV !== "development",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 };
 
-/**
- * @desc    Регистрация нового пользователя
- * @route   POST /api/users
- * @access  Public
- */
 export const registerUser = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
 
   try {
-    // Проверяем, существует ли уже такой пользователь
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: "Email уже занят" });
 
-    // Создаем пользователя в БД (пароль хешируется автоматически в модели)
     const user = await User.create({ name, email, password });
 
     if (user) {
-      // Генерируем токен для мгновенного входа после регистрации
       generateToken(res, user._id.toString());
 
       res.status(201).json({
         _id: user._id,
         name: user.name,
-        isAdmin: user.isAdmin,
         email: user.email,
+        isAdmin: user.isAdmin,
+        balance: user.balance,
+        image: user.image,
+        createdAt: user.createdAt,
       });
     }
   } catch (error) {
@@ -55,28 +43,28 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * @desc    Авторизация пользователя (Логин)
- * @route   POST /api/users/login
- * @access  Public
- */
 export const authUser = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
-    // Ищем пользователя в БД по email
     const user = await User.findOne({ email });
 
-    // Проверяем существование пользователя и валидность пароля через метод модели
     if (user && (await user.matchPassword(password))) {
-      // Генерируем и отправляем токен
       generateToken(res, user._id.toString());
 
       res.json({
         _id: user._id,
         name: user.name,
-        isAdmin: user.isAdmin,
         email: user.email,
+        isAdmin: user.isAdmin,
+        balance: user.balance,
+        image: user.image,
+        createdAt: user.createdAt,
+        phone: user.phone,
+        country: user.country,
+        city: user.city,
+        street: user.street,
+        house: user.house,
       });
     } else {
       res.status(401).json({ message: "Неверный пароль или email" });
@@ -86,11 +74,6 @@ export const authUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * @desc    Получить профиль текущего пользователя
- * @route   GET /api/users/profile
- * @access  Private
- */
 export const getUserProfile = async (req: AuthRequest, res: Response) => {
   const user = await User.findById(req.user?._id);
 
@@ -102,6 +85,8 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
       isAdmin: user.isAdmin,
       phone: user.phone,
       image: user.image,
+      createdAt: user.createdAt,
+      balance: user.balance,
       country: user.country,
       city: user.city,
       street: user.street,
@@ -112,11 +97,6 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/**
- * @desc    Обновить профиль пользователя (Настройки)
- * @route   PUT /api/users/profile
- * @access  Private
- */
 export const updateUserProfile = async (req: AuthRequest, res: Response) => {
   const user = await User.findById(req.user?._id);
 
@@ -125,7 +105,6 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
     user.image = req.body.image || user.image;
-
     user.country = req.body.country || user.country;
     user.city = req.body.city || user.city;
     user.street = req.body.street || user.street;
@@ -148,22 +127,98 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
       street: updatedUser.street,
       house: updatedUser.house,
       isAdmin: updatedUser.isAdmin,
+      balance: updatedUser.balance,
     });
   } else {
     res.status(404).json({ message: "Пользователь не найден" });
   }
 };
 
-/**
- * @desc    Выход пользователя из системы / Очистка куки
- * @route   POST /api/users/logout
- * @access  Private (хотя технически можно и Public)
- */
 export const logoutUser = (_req: Request, res: Response) => {
-  // Заменяем текущую куку на пустую и ставим срок годности на прошедшую дату
   res.cookie("jwt", "", {
     httpOnly: true,
     expires: new Date(0),
   });
   res.status(200).json({ message: "Вышли из системы" });
+};
+
+export const getUserBalance = async (req: any, res: Response) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    res.status(200).json({ balance: user.balance });
+  } else {
+    res.status(404).json({ message: "Пользователь не найден" });
+  }
+};
+
+export const topUpBalance = async (req: any, res: Response) => {
+  const { amount } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Укажите корректную сумму" });
+    }
+
+    user.balance += Number(amount);
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      message: "Баланс успешно пополнен",
+      balance: updatedUser.balance,
+    });
+  } else {
+    res.status(404).json({ message: "Пользователь не найден" });
+  }
+};
+
+export const withdrawBalance = async (req: any, res: Response) => {
+  const { amount } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Укажите корректную сумму" });
+    }
+
+    if (user.balance < amount) {
+      return res
+        .status(400)
+        .json({ message: "Недостаточно средств на балансе" });
+    }
+
+    user.balance -= Number(amount);
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      message: "Средства выведены",
+      balance: updatedUser.balance,
+    });
+  } else {
+    res.status(404).json({ message: "Пользователь не найден" });
+  }
+};
+
+export const adminTopUpBalance = async (req: Request, res: Response) => {
+  const { amount } = req.body;
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return res.status(404).json({ message: "Пользователь не найден" });
+  }
+
+  if (!amount || amount <= 0) {
+    return res
+      .status(400)
+      .json({ message: "Укажите корректную сумму больше нуля" });
+  }
+
+  user.balance += Number(amount);
+  await user.save();
+
+  res.status(200).json({
+    message: `Баланс пользователя ${user.name} успешно обновлен`,
+    balance: user.balance,
+  });
 };
