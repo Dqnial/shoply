@@ -14,6 +14,7 @@ interface User {
   street?: string;
   house?: string;
   image?: string;
+  token?: string;
 }
 
 interface AuthFormData {
@@ -39,7 +40,10 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
+  user:
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("userInfo") || "null")
+      : null,
   isChecking: true,
   isAuthChecked: false,
   isAuthLoading: false,
@@ -48,10 +52,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   checkAuth: async () => {
+    if (typeof window !== "undefined" && !localStorage.getItem("userInfo")) {
+      set({ user: null, isAuthChecked: true, isChecking: false });
+      return;
+    }
+
     try {
       const { data } = await userApi.getProfile();
-      set({ user: data, isAuthChecked: true });
+      const localData = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const updatedUser = { ...localData, ...data };
+
+      localStorage.setItem("userInfo", JSON.stringify(updatedUser));
+      set({ user: updatedUser, isAuthChecked: true });
     } catch {
+      localStorage.removeItem("userInfo");
       set({ user: null, isAuthChecked: true });
     } finally {
       set({ isChecking: false });
@@ -62,6 +76,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isAuthLoading: true, error: null });
     try {
       const { data } = await userApi.login(formData);
+      localStorage.setItem("userInfo", JSON.stringify(data));
       set({ user: data, isAuthChecked: true });
     } catch (err: any) {
       const msg = err.response?.data?.message || "Ошибка входа";
@@ -76,6 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isAuthLoading: true, error: null });
     try {
       const { data } = await userApi.register(formData);
+      localStorage.setItem("userInfo", JSON.stringify(data));
       set({ user: data, isAuthChecked: true });
     } catch (err: any) {
       const msg = err.response?.data?.message || "Ошибка регистрации";
@@ -89,10 +105,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     set({ isAuthLoading: true });
     try {
-      await userApi.logout();
-      set({ user: null, isAuthChecked: true });
+      await userApi.logout().catch(() => {});
     } finally {
-      set({ isAuthLoading: false });
+      localStorage.removeItem("userInfo");
+      set({ user: null, isAuthChecked: true, isAuthLoading: false });
     }
   },
 
@@ -100,7 +116,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isAuthLoading: true, error: null });
     try {
       const { data } = await userApi.updateProfile(formData);
-      set({ user: data });
+      const localData = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const updatedUser = { ...localData, ...data };
+
+      localStorage.setItem("userInfo", JSON.stringify(updatedUser));
+      set({ user: updatedUser });
     } catch (err: any) {
       const msg = err.response?.data?.message || "Ошибка обновления профиля";
       set({ error: msg });
@@ -111,8 +131,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   updateBalance: (newBalance) => {
-    set((state) => ({
-      user: state.user ? { ...state.user, balance: newBalance } : null,
-    }));
+    set((state) => {
+      if (!state.user) return state;
+      const updatedUser = { ...state.user, balance: newBalance };
+      localStorage.setItem("userInfo", JSON.stringify(updatedUser));
+      return { user: updatedUser };
+    });
   },
 }));

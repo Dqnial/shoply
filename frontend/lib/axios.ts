@@ -1,9 +1,22 @@
 import axios from "axios";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const api = axios.create({
   baseURL: `${API_URL}/api`,
-  withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const userInfo = localStorage.getItem("userInfo");
+    if (userInfo) {
+      const { token } = JSON.parse(userInfo);
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+  }
+  return config;
 });
 
 export const adminApi = {
@@ -20,11 +33,8 @@ export const adminApi = {
 export const userApi = {
   getProfile: () => api.get("/users/profile"),
   updateProfile: (data: any) => api.put("/users/profile", data),
-
   getMyOrders: () => api.get("/orders/myorders"),
-
   getOrderDetails: (id: string) => api.get(`/orders/${id}`),
-
   login: (credentials: any) => api.post("/users/login", credentials),
   register: (userData: any) => api.post("/users/register", userData),
   logout: () => api.post("/users/logout"),

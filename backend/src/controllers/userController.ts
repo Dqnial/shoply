@@ -3,17 +3,9 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import type { AuthRequest } from "../middleware/authMiddleware.js";
 
-const generateToken = (res: Response, userId: string): void => {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET!, {
+const generateToken = (userId: string): string => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET!, {
     expiresIn: "30d",
-  });
-
-  res.cookie("jwt", token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    partitioned: true,
-    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 };
 
@@ -25,7 +17,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     const user = await User.create({ name, email, password });
     if (user) {
-      generateToken(res, user._id.toString());
+      const token = generateToken(user._id.toString());
       return res.status(201).json({
         _id: user._id,
         name: user.name,
@@ -34,6 +26,7 @@ export const registerUser = async (req: Request, res: Response) => {
         balance: user.balance,
         image: user.image,
         createdAt: user.createdAt,
+        token: token,
       });
     }
     return res.status(400).json({ message: "Неверные данные пользователя" });
@@ -47,7 +40,7 @@ export const authUser = async (req: Request, res: Response) => {
   try {
     const user = await User.findOne({ email });
     if (user && (await user.matchPassword(password))) {
-      generateToken(res, user._id.toString());
+      const token = generateToken(user._id.toString());
       return res.json({
         _id: user._id,
         name: user.name,
@@ -61,6 +54,7 @@ export const authUser = async (req: Request, res: Response) => {
         city: user.city,
         street: user.street,
         house: user.house,
+        token: token,
       });
     }
     return res.status(401).json({ message: "Неверный пароль или email" });
@@ -112,6 +106,8 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
       }
 
       const updatedUser = await user.save();
+      const token = generateToken(updatedUser._id.toString());
+
       return res.json({
         _id: updatedUser._id,
         name: updatedUser.name,
@@ -124,6 +120,7 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
         house: updatedUser.house,
         isAdmin: updatedUser.isAdmin,
         balance: updatedUser.balance,
+        token: token,
       });
     }
     return res.status(404).json({ message: "Пользователь не найден" });
@@ -133,13 +130,6 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
 };
 
 export const logoutUser = (_req: Request, res: Response) => {
-  res.cookie("jwt", "", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    partitioned: true,
-    expires: new Date(0),
-  });
   return res.status(200).json({ message: "Вышли из системы" });
 };
 
