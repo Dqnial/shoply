@@ -5,7 +5,9 @@ import { useParams } from "next/navigation";
 import api, { API_URL } from "@/lib/axios";
 import { Product } from "@/types";
 import { useCartStore } from "@/store/useCartStore";
+import { useFavoriteStore } from "@/store/useFavoriteStore";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   ShoppingCart,
   ChevronLeft,
@@ -15,14 +17,16 @@ import {
   Heart,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export default function ProductPage() {
   const { id } = useParams();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const addItem = useCartStore((state) => state.addItem);
+  const { addToFavorites, removeFromFavorites, isFavorite } =
+    useFavoriteStore();
 
   useEffect(() => {
     api.get(`/products/${id}`).then((res) => setProduct(res.data));
@@ -32,12 +36,32 @@ export default function ProductPage() {
     return (
       <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/10 blur-[120px] rounded-full" />
-
         <div className="relative flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       </div>
     );
+
+  const favorite = isFavorite(product._id);
+
+  const handleAddToCart = () => {
+    addItem({ ...product, qty: 1 });
+    toast.success("Товар добавлен в корзину!", {
+      description: product.name,
+    });
+  };
+
+  const handleFavoriteToggle = () => {
+    if (favorite) {
+      removeFromFavorites(product._id);
+      toast.info("Удалено из избранного");
+    } else {
+      addToFavorites(product);
+      toast.success("Добавлено в избранное!", {
+        icon: <Heart size={14} className="fill-current" />,
+      });
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -117,9 +141,9 @@ export default function ProductPage() {
           <div className="flex gap-3">
             <Button
               size="lg"
-              className="cursor-pointer flex-1 h-16 text-lg font-bold bg-primary text-primary-foreground hover:opacity-90 gap-3 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"
               disabled={product.countInStock === 0}
-              onClick={() => addItem({ ...product, qty: 1 })}
+              onClick={handleAddToCart}
+              className="cursor-pointer flex-1 h-16 text-lg font-bold bg-primary text-primary-foreground hover:opacity-90 gap-3 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-[0.98] disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
             >
               <ShoppingCart size={24} />
               {product.countInStock > 0
@@ -127,15 +151,17 @@ export default function ProductPage() {
                 : "Нет в наличии"}
             </Button>
 
-            <Button
-              variant="secondary"
-              className="cursor-pointer group h-16 w-16 rounded-2xl border border-border hover:bg-secondary transition-all active:scale-[0.98]"
+            <button
+              onClick={handleFavoriteToggle}
+              className={cn(
+                "cursor-pointer flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm transition-all active:scale-90",
+                favorite
+                  ? "bg-primary border-primary text-primary-foreground shadow-primary/20 shadow-xl"
+                  : "bg-background border-border text-foreground hover:text-destructive hover:bg-secondary"
+              )}
             >
-              <Heart
-                size={24}
-                className="transition-colors group-hover:fill-destructive group-hover:text-destructive"
-              />
-            </Button>
+              <Heart size={26} className={cn(favorite && "fill-current")} />
+            </button>
           </div>
         </div>
       </div>

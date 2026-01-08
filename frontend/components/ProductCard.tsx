@@ -5,9 +5,9 @@ import { Product } from "@/types";
 import { ShoppingCart, Heart } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/store/useCartStore";
-import { useFavoriteStore } from "@/store/useFavoriteStore"; // Импортируем стор
+import { useFavoriteStore } from "@/store/useFavoriteStore";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils"; // Для удобной работы с классами
+import { cn } from "@/lib/utils";
 import { API_URL } from "@/lib/axios";
 
 export default function ProductCard({ product }: { product: Product }) {
