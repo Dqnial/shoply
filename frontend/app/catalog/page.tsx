@@ -116,7 +116,7 @@ export default function CatalogPage() {
 
   const resetFilters = () => router.push(pathname);
 
-  if (!loading) return <CatalogSkeleton />;
+  if (loading) return <CatalogSkeleton />;
 
   return (
     <div className="container mx-auto px-4 py-10">
