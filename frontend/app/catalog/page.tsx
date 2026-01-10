@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/types";
+import CatalogSkeleton from "@/components/CatalogSkeleton";
 
 const ITEMS_PER_PAGE = 2;
 
@@ -115,12 +116,7 @@ export default function CatalogPage() {
 
   const resetFilters = () => router.push(pathname);
 
-  if (loading)
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
+  if (!loading) return <CatalogSkeleton />;
 
   return (
     <div className="container mx-auto px-4 py-10">
