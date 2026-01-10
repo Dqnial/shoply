@@ -19,6 +19,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import ProductSkeleton from "@/components/ProductSkeleton";
 
 export default function ProductPage() {
   const { id } = useParams();
@@ -32,15 +33,7 @@ export default function ProductPage() {
     api.get(`/products/${id}`).then((res) => setProduct(res.data));
   }, [id]);
 
-  if (!product)
-    return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/10 blur-[120px] rounded-full" />
-        <div className="relative flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
-      </div>
-    );
+  if (!product) return <ProductSkeleton />;
 
   const favorite = isFavorite(product._id);
 

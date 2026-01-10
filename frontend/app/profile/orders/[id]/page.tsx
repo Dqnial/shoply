@@ -17,6 +17,7 @@ import {
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import OrderDetailsSkeleton from "@/components/OrderDetailsSkeleton";
 
 export default function OrderDetailsPage() {
   const { id } = useParams();
@@ -38,12 +39,7 @@ export default function OrderDetailsPage() {
     fetchOrder();
   }, [id]);
 
-  if (loading)
-    return (
-      <div className="container mx-auto px-4 py-20 flex flex-col items-center justify-center">
-        <Loader2 className="animate-spin text-primary/50 mb-4" size={40} />
-      </div>
-    );
+  if (loading) return <OrderDetailsSkeleton />;
 
   if (!order)
     return (

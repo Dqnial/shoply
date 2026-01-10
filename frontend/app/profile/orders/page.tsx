@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link"; // Импортируем Link
+import OrdersSkeleton from "@/components/OrdersSkeleton";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -25,16 +26,7 @@ export default function OrdersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/10 blur-[120px] rounded-full" />
-        <div className="relative flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <OrdersSkeleton />;
 
   return (
     <div className="container mx-auto px-4 py-10">
