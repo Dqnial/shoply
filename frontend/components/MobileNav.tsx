@@ -82,7 +82,7 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
         {user ? (
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <button className="flex flex-col items-center justify-center flex-1 transition-all active:scale-95 outline-none">
+              <button className="cursor-pointer flex flex-col items-center justify-center flex-1 transition-all active:scale-95 outline-none">
                 <User
                   className={`w-6 h-6 ${
                     pathname.startsWith("/profile")

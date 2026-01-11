@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { SearchModal } from "./SearchModal";
 import AuthModal from "./AuthModal";
 import UserMenu from "./UserMenu";
-import { MobileMenu } from "./MobileMenu";
 import MobileNav from "./MobileNav";
 
 export default function Navbar() {
@@ -40,12 +39,6 @@ export default function Navbar() {
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 КАТАЛОГ
-              </Link>
-              <Link
-                href="/about"
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                О НАС
               </Link>
             </div>
           </div>
@@ -101,8 +94,6 @@ export default function Navbar() {
                 <AuthModal />
               )}
             </div>
-
-            <MobileMenu />
           </div>
         </div>
       </nav>
