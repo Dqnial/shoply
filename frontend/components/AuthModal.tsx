@@ -24,6 +24,7 @@ export default function AuthModal({
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -31,21 +32,45 @@ export default function AuthModal({
     confirmPassword: "",
   });
 
-  const { login, register, isAuthLoading, error, clearError } = useAuthStore();
+  const {
+    login,
+    register,
+    isAuthLoading,
+    error: serverError,
+    clearError,
+  } = useAuthStore();
+
+  const resetFormState = () => {
+    setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+    setShowPassword(false);
+    setLocalError(null);
+    clearError();
+  };
 
   const handleSwitchMode = () => {
     setMode(mode === "login" ? "register" : "login");
-    setFormData({ name: "", email: "", password: "", confirmPassword: "" });
-    setShowPassword(false);
+    resetFormState();
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setLocalError(null);
     clearError();
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLocalError(null);
 
-    if (mode === "register" && formData.password !== formData.confirmPassword) {
-      toast.error("Пароли не совпадают!");
-      return;
+    if (mode === "register") {
+      if (formData.password.length < 6) {
+        setLocalError("Пароль должен быть не менее 6 символов");
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setLocalError("Пароли не совпадают!");
+        return;
+      }
     }
 
     try {
@@ -61,27 +86,22 @@ export default function AuthModal({
         toast.success("Аккаунт успешно создан!");
       }
       setOpen(false);
-      setFormData({ name: "", email: "", password: "", confirmPassword: "" });
-    } catch (err: any) {
-      toast.error(err?.message || "Произошла ошибка");
-    }
+      resetFormState();
+    } catch (err: any) {}
   };
+
+  const displayError = localError || serverError;
 
   return (
     <Dialog
       open={open}
       onOpenChange={(val) => {
         setOpen(val);
-        if (!val) {
-          clearError();
-          setShowPassword(false);
-        }
+        if (!val) resetFormState();
       }}
     >
       <DialogTrigger asChild>
-        {children ? (
-          children
-        ) : (
+        {children || (
           <Button
             variant="ghost"
             size="icon"
@@ -104,10 +124,10 @@ export default function AuthModal({
           </DialogDescription>
         </DialogHeader>
 
-        {error && (
-          <div className="flex items-center gap-2 p-3 text-xs font-medium text-destructive bg-destructive/5 border border-destructive/10 rounded-lg">
-            <AlertCircle size={14} />
-            {error}
+        {displayError && (
+          <div className="flex items-center gap-2 p-3 text-xs font-medium text-destructive bg-destructive/5 border border-destructive/10 rounded-lg animate-in fade-in slide-in-from-top-1">
+            <AlertCircle size={14} className="shrink-0" />
+            {displayError}
           </div>
         )}
 
@@ -124,11 +144,9 @@ export default function AuthModal({
                 id="name"
                 required
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Иван Иванов"
-                className="rounded-lg border-border h-10 text-sm focus-visible:ring-1"
+                className="rounded-lg border-border h-10 text-sm"
               />
             </div>
           )}
@@ -145,11 +163,9 @@ export default function AuthModal({
               type="email"
               required
               value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
+              onChange={(e) => handleInputChange("email", e.target.value)}
               placeholder="example@mail.com"
-              className="rounded-lg border-border h-10 text-sm focus-visible:ring-1"
+              className="rounded-lg border-border h-10 text-sm"
             />
           </div>
 
@@ -166,11 +182,9 @@ export default function AuthModal({
                 type={showPassword ? "text" : "password"}
                 required
                 value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                onChange={(e) => handleInputChange("password", e.target.value)}
                 placeholder="••••••••"
-                className="rounded-lg border-border h-10 text-sm focus-visible:ring-1 pr-10"
+                className="rounded-lg border-border h-10 text-sm pr-10"
               />
               <button
                 type="button"
@@ -196,10 +210,10 @@ export default function AuthModal({
                 required
                 value={formData.confirmPassword}
                 onChange={(e) =>
-                  setFormData({ ...formData, confirmPassword: e.target.value })
+                  handleInputChange("confirmPassword", e.target.value)
                 }
                 placeholder="••••••••"
-                className="rounded-lg border-border h-10 text-sm focus-visible:ring-1"
+                className="rounded-lg border-border h-10 text-sm"
               />
             </div>
           )}
@@ -226,7 +240,7 @@ export default function AuthModal({
           <Button
             variant="link"
             onClick={handleSwitchMode}
-            className="cursor-pointer p-0 h-auto text-sm text-primary hover:underline hover:underline-offset-4 transition-all font-semibold"
+            className="cursor-pointer p-0 h-auto text-sm text-primary hover:underline transition-all font-semibold"
           >
             {mode === "login" ? "Зарегистрироваться" : "Войти"}
           </Button>

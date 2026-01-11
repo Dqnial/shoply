@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,19 +25,36 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const DEFAULT_AVATAR = "/uploads/default-avatar.png";
 
+  const [activeTab, setActiveTab] = useState("profile");
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    country: user?.country || "",
-    city: user?.city || "",
-    street: user?.street || "",
-    house: user?.house || "",
+    name: "",
+    email: "",
+    phone: "",
+    country: "",
+    city: "",
+    street: "",
+    house: "",
     password: "",
-    image: user?.image || DEFAULT_AVATAR,
+    image: DEFAULT_AVATAR,
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        country: user.country || "",
+        city: user.city || "",
+        street: user.street || "",
+        house: user.house || "",
+        password: "",
+        image: user.image || DEFAULT_AVATAR,
+      });
+    }
+  }, [user]);
 
   const getInitials = (name: string) => name?.charAt(0).toUpperCase() || "U";
 
@@ -55,17 +72,24 @@ export default function SettingsPage() {
   const removeAvatar = (e: React.MouseEvent) => {
     e.stopPropagation();
     setFormData({ ...formData, image: DEFAULT_AVATAR });
-    toast.info("Аватар будет удален после сохранения");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password && formData.password !== confirmPassword) {
-      return toast.error("Пароли не совпадают");
+
+    if (formData.password) {
+      if (formData.password.length < 6) {
+        return toast.error("Пароль должен быть не менее 6 символов");
+      }
+      if (formData.password !== confirmPassword) {
+        return toast.error("Пароли не совпадают");
+      }
     }
+
     try {
       await updateProfile(formData);
       toast.success("Данные успешно сохранены");
+      setFormData((prev) => ({ ...prev, password: "" }));
       setConfirmPassword("");
     } catch (err) {
       toast.error("Ошибка при обновлении");
@@ -95,7 +119,15 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-8">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value);
+          setFormData((prev) => ({ ...prev, password: "" }));
+          setConfirmPassword("");
+        }}
+        className="space-y-8"
+      >
         <TabsList className="grid grid-cols-3 bg-secondary/20 p-1.5 rounded-[2rem] h-auto w-full max-w-2xl mx-auto md:mx-0">
           <TabsTrigger
             value="profile"
