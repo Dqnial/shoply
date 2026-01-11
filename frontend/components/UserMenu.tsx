@@ -138,7 +138,7 @@ export default function UserMenu({ user }: { user: any }) {
             className="rounded-xl focus:bg-destructive/5 cursor-pointer px-3 py-2.5 text-destructive focus:text-destructive transition-colors"
           >
             <div className="flex items-center gap-3 w-full font-semibold text-sm">
-              <LogOut size={16} />
+              <LogOut size={16} className="text-destructive" />
               <span>Выйти</span>
             </div>
           </DropdownMenuItem>

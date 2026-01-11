@@ -14,7 +14,6 @@ import {
   Settings,
   ShieldCheck,
   LogOut,
-  Wallet,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import AuthModal from "./AuthModal";
@@ -179,9 +178,9 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
                 {user.isAdmin && (
                   <Link
                     href="/admin"
-                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-primary/5 active:bg-primary/10 transition-colors text-primary"
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-primary/5 active:bg-primary/10 transition-colors"
                   >
-                    <ShieldCheck size={18} />
+                    <ShieldCheck size={18} className="text-muted-foreground" />
                     <span className="font-semibold text-sm">Админ-панель</span>
                   </Link>
                 )}
