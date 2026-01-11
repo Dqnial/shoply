@@ -32,7 +32,11 @@ export default function RootLayout({
           disableTransitionOnChange
         > */}
         <AuthInitializer>
-          <Toaster />
+          <Toaster
+            toastOptions={{
+              className: "mb-[70px] md:mb-0",
+            }}
+          />
           <Navbar />
           <main className="flex-grow">{children}</main>
           <Footer />

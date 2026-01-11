@@ -9,12 +9,12 @@ import { useFavoriteStore } from "@/store/useFavoriteStore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { API_URL } from "@/lib/axios";
+import { Button } from "@/components/ui/button";
 
 export default function ProductCard({ product }: { product: Product }) {
   const imageUrl = `${API_URL}${product.image}`;
   const addItem = useCartStore((state) => state.addItem);
 
-  // Подключаем функции избранного
   const { addToFavorites, removeFromFavorites, isFavorite } =
     useFavoriteStore();
   const favorite = isFavorite(product._id);
@@ -55,64 +55,59 @@ export default function ProductCard({ product }: { product: Product }) {
             src={imageUrl}
             alt={product.name}
             fill
-            className="object-contain p-6 transition-transform duration-500 group-hover:scale-105"
+            className="object-contain p-4 md:p-6 transition-transform duration-500 md:group-hover:scale-105"
           />
         </Link>
 
         {product.countInStock === 0 && (
-          <div className="absolute top-2.5 left-2.5 z-20 bg-background/90 backdrop-blur-sm text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border border-border shadow-sm">
+          <div className="absolute top-2.5 left-2.5 z-20 bg-background/90 backdrop-blur-sm text-[8px] md:text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border border-border shadow-sm">
             Нет в наличии
           </div>
         )}
 
-        {/* Кнопки действий */}
-        <div className="absolute top-2.5 right-2.5 z-20 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-[-4px] group-hover:translate-y-0">
-          <button
+        <div className="absolute top-2.5 right-2.5 z-20 flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 translate-y-0 md:translate-y-[-4px] md:group-hover:translate-y-0">
+          <Button
+            variant={favorite ? "default" : "secondary"}
+            size="icon"
             onClick={handleFavoriteToggle}
             className={cn(
-              "cursor-pointer flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-all active:scale-90",
+              "cursor-pointer h-9 w-9 md:h-10 md:w-10 rounded-full shadow-md transition-all active:scale-90",
               favorite
-                ? "bg-primary border-primary text-primary-foreground"
-                : "bg-background border-border text-foreground hover:text-destructive"
+                ? "bg-primary text-primary-foreground"
+                : "bg-background/80 backdrop-blur-md border border-border text-foreground"
             )}
           >
-            <Heart size={16} className={cn(favorite && "fill-current")} />
-          </button>
+            <Heart size={18} className={cn(favorite && "fill-current")} />
+          </Button>
 
-          <button
+          <Button
+            variant="default"
+            size="icon"
             onClick={handleAddToCart}
             disabled={product.countInStock === 0}
-            className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-transform active:scale-90 disabled:bg-muted disabled:text-muted-foreground"
+            className="cursor-pointer h-9 w-9 md:h-10 md:w-10 rounded-full shadow-md transition-transform active:scale-90"
           >
-            <ShoppingCart size={15} />
-          </button>
+            <ShoppingCart size={18} />
+          </Button>
         </div>
       </div>
 
-      <div className="mt-3 px-0.5 space-y-1">
+      <div className="mt-3 px-1 space-y-1">
         <div className="flex flex-col">
           <Link href={`/product/${product._id}`}>
-            <h3 className="text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary/80 transition-colors">
+            <h3 className="text-[13px] md:text-sm font-medium text-foreground line-clamp-1 md:group-hover:text-primary transition-colors">
               {product.name}
             </h3>
           </Link>
-          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+          <p className="text-[9px] md:text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
             {product.brand}
           </p>
         </div>
 
         <div className="flex items-center justify-between pt-0.5">
-          <span className="text-[15px] font-black text-foreground">
+          <span className="text-[15px] md:text-base font-black text-foreground">
             {product.price.toLocaleString()} ₸
           </span>
-
-          <button
-            onClick={handleAddToCart}
-            disabled={product.countInStock === 0}
-            className="md:hidden text-primary transition-transform active:scale-90"
-          >
-            <ShoppingCart size={18} />
-          </button>
         </div>
       </div>
     </div>

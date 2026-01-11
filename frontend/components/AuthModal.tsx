@@ -16,7 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 
-export default function AuthModal() {
+export default function AuthModal({
+  children,
+}: {
+  children?: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
@@ -75,13 +79,17 @@ export default function AuthModal() {
       }}
     >
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
-        >
-          <User className="w-5! h-5!" />
-        </Button>
+        {children ? (
+          children
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+          >
+            <User className="w-5! h-5!" />
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[380px] rounded-2xl border-border bg-card p-6 gap-6 shadow-xl">

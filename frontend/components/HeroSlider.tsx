@@ -4,6 +4,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Link from "next/link";
 
 const SLIDES = [
   {
@@ -39,37 +40,12 @@ export default function HeroSlider() {
         {SLIDES.map((slide) => (
           <div
             key={slide.id}
-            className={`flex-[0_0_100%] min-w-0 relative h-[420px] md:h-[550px] border-b border-white/5 ${slide.bg} transition-colors duration-700`}
+            className={`flex-[0_0_100%] min-w-0 relative min-h-[calc(100vh-140px)] md:h-[550px] border-b border-white/5 ${slide.bg} transition-colors duration-700 flex items-center`}
           >
-            <div className="container mx-auto px-6 h-full flex flex-col md:flex-row items-center justify-between gap-10 py-10">
-              <div className="z-10 w-full md:w-[60%] text-center md:text-left space-y-5">
-                <span
-                  className={`inline-block px-4 py-1.5 bg-white/5 ${slide.accent} backdrop-blur-md rounded-full text-[11px] md:text-xs font-bold tracking-[0.2em] border border-white/10`}
-                >
-                  {slide.price}
-                </span>
-
-                <h1 className="text-5xl md:text-[84px] font-black tracking-tighter uppercase leading-[0.85] text-white">
-                  {slide.title}
-                </h1>
-
-                <p className="text-base md:text-lg text-zinc-400 font-medium max-w-lg leading-relaxed">
-                  {slide.desc}
-                </p>
-
-                <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-4">
-                  <Button
-                    size="lg"
-                    className="bg-white text-black cursor-pointer hover:bg-zinc-200 px-10 py-7 text-base font-bold rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-xl shadow-white/5"
-                  >
-                    Купить сейчас
-                  </Button>
-                </div>
-              </div>
-
-              <div className="relative w-full md:w-[40%] h-[250px] md:h-[450px] flex items-center justify-center">
+            <div className="container mx-auto px-6 h-full flex flex-col md:flex-row items-center justify-center md:justify-between gap-8 md:gap-10 py-12 md:py-10">
+              <div className="relative w-full md:w-[40%] h-[220px] sm:h-[300px] md:h-[450px] flex items-center justify-center order-1 md:order-2">
                 <div
-                  className={`absolute w-[250px] md:w-[400px] h-[250px] md:h-[400px] ${slide.glow} blur-[100px] rounded-full animate-pulse`}
+                  className={`absolute w-[180px] md:w-[400px] h-[180px] md:h-[400px] ${slide.glow} blur-[70px] md:blur-[100px] rounded-full animate-pulse`}
                 />
 
                 <div className="relative w-full h-full transform hover:scale-110 transition-transform duration-1000 ease-out">
@@ -81,6 +57,32 @@ export default function HeroSlider() {
                     priority
                     unoptimized
                   />
+                </div>
+              </div>
+
+              <div className="z-10 w-full md:w-[60%] text-center md:text-left space-y-5 order-2 md:order-1">
+                <span
+                  className={`inline-block px-4 py-1.5 bg-white/5 ${slide.accent} backdrop-blur-md rounded-full text-[10px] md:text-xs font-bold tracking-[0.2em] border border-white/10`}
+                >
+                  {slide.price}
+                </span>
+
+                <h1 className="text-4xl sm:text-6xl md:text-[84px] font-black tracking-tighter uppercase leading-[0.9] md:leading-[0.85] text-white">
+                  {slide.title}
+                </h1>
+
+                <p className="text-sm md:text-lg text-zinc-400 font-medium max-w-lg mx-auto md:mx-0 leading-relaxed">
+                  {slide.desc}
+                </p>
+
+                <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-2">
+                  <Button
+                    size="lg"
+                    asChild
+                    className="bg-white text-black cursor-pointer hover:bg-zinc-200 px-8 md:px-10 py-6 md:py-7 text-sm md:text-base font-bold rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-xl shadow-white/5"
+                  >
+                    <Link href="/catalog">Купить сейчас</Link>
+                  </Button>
                 </div>
               </div>
             </div>
