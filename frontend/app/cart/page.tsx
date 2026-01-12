@@ -20,14 +20,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api, { API_URL } from "@/lib/axios";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getPlural } from "@/lib/utils";
 
 export default function CartPage() {
   const router = useRouter();
   const { cartItems, removeItem, updateQty, clearCart } = useCartStore();
-  const { user, updateBalance } = useAuthStore(); // Добавили updateBalance
+  const { user, updateBalance } = useAuthStore();
   const [isPending, setIsPending] = useState(false);
-
   const [paymentMethod, setPaymentMethod] = useState<"Card" | "Balance">(
     "Balance"
   );
@@ -64,7 +63,6 @@ export default function CartPage() {
 
     try {
       setIsPending(true);
-
       const orderData = {
         orderItems: cartItems.map((item) => ({
           name: item.name,
@@ -87,7 +85,6 @@ export default function CartPage() {
 
       const { data } = await api.post("/orders", orderData);
 
-      // Обновляем баланс в глобальном стейте, если оплата была с баланса
       if (paymentMethod === "Balance") {
         const newBalance = (user.balance || 0) - total;
         updateBalance(newBalance);
@@ -97,7 +94,6 @@ export default function CartPage() {
       clearCart();
       router.push(`/profile/orders/${data._id}`);
     } catch (err: any) {
-      console.error("Order Error:", err);
       toast.error(err.response?.data?.message || "Не удалось создать заказ");
     } finally {
       setIsPending(false);
@@ -116,10 +112,6 @@ export default function CartPage() {
     }
     const numValue = parseInt(value);
     if (!isNaN(numValue)) updateQty(item._id, numValue);
-  };
-
-  const handleBlur = (item: any) => {
-    if (item.qty < 1) updateQty(item._id, 1);
   };
 
   if (cartItems.length === 0) {
@@ -145,25 +137,25 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      <div className="space-y-1 mb-10">
-        <h1 className="text-4xl font-bold uppercase tracking-tighter text-primary">
+    <div className="container mx-auto px-4 py-6 md:py-10">
+      <div className="space-y-1 mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tighter text-primary">
           Корзина
         </h1>
-        <p className="text-muted-foreground">
-          У вас {cartItems.length} {cartItems.length !== 1 ? "товара" : "товар"}{" "}
-          в списке
+        <p className="text-sm text-muted-foreground font-medium">
+          У вас {cartItems.length}{" "}
+          {getPlural(cartItems.length, ["товар", "товара", "товаров"])} в списке
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 space-y-3">
+        <div className="lg:col-span-2 space-y-4">
           {cartItems.map((item) => (
             <div
               key={item._id}
-              className="group flex items-center gap-6 bg-card p-4 rounded-2xl border border-border/60 transition-all hover:border-primary/20"
+              className="group relative grid grid-cols-[auto_1fr_auto] items-center gap-3 md:gap-6 bg-card p-3 md:p-4 rounded-2xl border border-border/60 transition-all hover:border-primary/20 md:hover:shadow-sm"
             >
-              <div className="relative w-24 h-24 bg-secondary/50 rounded-xl overflow-hidden flex-shrink-0">
+              <div className="relative w-20 h-20 md:w-24 md:h-24 bg-secondary/50 rounded-xl overflow-hidden flex-shrink-0">
                 <Image
                   src={`${API_URL}${item.image}`}
                   alt={item.name}
@@ -173,40 +165,43 @@ export default function CartPage() {
                 />
               </div>
 
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-foreground text-lg truncate mb-1">
-                  {item.name}
-                </h3>
-                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-2">
-                  {item.brand}
-                </p>
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col min-w-0 h-full justify-between py-1">
+                <div>
+                  <h3 className="font-bold text-foreground text-sm md:text-lg truncate leading-tight">
+                    {item.name}
+                  </h3>
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-1">
+                    {item.brand}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 mt-2">
                   <div className="flex items-center bg-secondary/50 rounded-lg border border-border/40 p-0.5">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleQtyChange(item, item.qty - 1)}
-                      className="cursor-pointer w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors"
+                      className="cursor-pointer w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-all active:scale-90"
                     >
-                      <Minus size={14} />
+                      <Minus size={12} />
                     </Button>
                     <input
                       type="number"
                       value={item.qty === 0 ? "" : item.qty}
                       onChange={(e) => handleInputChange(item, e.target.value)}
-                      onBlur={() => handleBlur(item)}
-                      className="w-9 bg-transparent text-center text-sm font-bold focus:outline-none"
+                      onBlur={() => item.qty < 1 && updateQty(item._id, 1)}
+                      className="w-8 bg-transparent text-center text-xs font-bold focus:outline-none appearance-none"
                     />
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleQtyChange(item, item.qty + 1)}
-                      className="cursor-pointer w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors"
+                      className="cursor-pointer w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-all active:scale-90"
                     >
-                      <Plus size={14} />
+                      <Plus size={12} />
                     </Button>
                   </div>
-                  <span className="font-black text-foreground">
+                  <span className="font-black text-foreground text-sm md:text-base whitespace-nowrap">
                     {(item.price * item.qty).toLocaleString()} ₸
                   </span>
                 </div>
@@ -215,16 +210,16 @@ export default function CartPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="cursor-pointer rounded-xl hover:bg-destructive/10 hover:text-destructive transition-colors"
+                className="cursor-pointer self-start md:self-center rounded-xl hover:bg-destructive/10 hover:text-destructive transition-colors h-9 w-9"
                 onClick={() => removeItem(item._id)}
               >
-                <Trash2 size={20} />
+                <Trash2 size={18} />
               </Button>
             </div>
           ))}
         </div>
 
-        <div className="sticky top-28 space-y-4">
+        <div className="sticky top-28 space-y-4 pb-20 md:pb-0">
           <div className="bg-card p-6 rounded-3xl border border-border shadow-sm space-y-4">
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">
               Способ оплаты
@@ -263,7 +258,6 @@ export default function CartPage() {
                   <CheckCircle2 size={18} className="text-primary" />
                 )}
               </button>
-
               <button
                 onClick={() => handlePaymentMethodChange("Card")}
                 className="group relative flex items-center justify-between p-4 rounded-2xl border-2 border-transparent bg-secondary/30 transition-all cursor-pointer opacity-60 hover:opacity-80"
@@ -273,11 +267,9 @@ export default function CartPage() {
                     <CreditCard size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-bold leading-none">
-                      Банковская карта
-                    </p>
+                    <p className="text-sm font-bold leading-none">Карта</p>
                     <p className="text-[9px] text-primary font-bold uppercase tracking-tighter mt-1">
-                      Скоро будет доступно
+                      Скоро
                     </p>
                   </div>
                 </div>
@@ -285,7 +277,7 @@ export default function CartPage() {
             </div>
           </div>
 
-          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-6">
+          <div className="bg-card p-6 md:p-8 rounded-3xl border border-border shadow-sm space-y-6">
             <div className="space-y-4">
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">
                 Детали заказа
@@ -303,7 +295,7 @@ export default function CartPage() {
               <div className="h-px bg-border my-4" />
               <div className="flex justify-between items-end">
                 <span className="font-bold">Итого:</span>
-                <span className="text-3xl font-black tracking-tighter text-foreground">
+                <span className="text-2xl md:text-3xl font-black tracking-tighter text-foreground">
                   {total.toLocaleString()} ₸
                 </span>
               </div>
@@ -315,30 +307,27 @@ export default function CartPage() {
                 isPending ||
                 (paymentMethod === "Balance" && (user?.balance || 0) < total)
               }
-              className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest text-xs group shadow-xl shadow-primary/20 transition-all active:scale-[0.98] cursor-pointer"
+              className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest text-[10px] group shadow-xl shadow-primary/20 transition-all active:scale-[0.98] cursor-pointer"
             >
               {isPending ? (
                 <Loader2 className="animate-spin h-5 w-5" />
               ) : (
-                <>
+                <span className="flex items-center">
                   Оформить и оплатить{" "}
                   <ArrowRight
                     size={16}
                     className="ml-2 transition-transform group-hover:translate-x-1"
                   />
-                </>
+                </span>
               )}
             </Button>
-
             {paymentMethod === "Balance" && user && user.balance < total && (
               <p className="text-[10px] text-center text-destructive font-bold uppercase tracking-tight">
-                Недостаточно средств на балансе
+                Недостаточно средств
               </p>
             )}
-
             <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
-              Нажимая кнопку, вы подтверждаете списание <br /> средств с вашего
-              личного счета.
+              Нажимая кнопку, вы подтверждаете списание средств.
             </p>
           </div>
         </div>

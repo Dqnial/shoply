@@ -46,8 +46,8 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t border-border px-2 pb-safe">
-      <div className="flex justify-around items-center h-16">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t border-border touch-manipulation pb-[env(safe-area-inset-bottom)]">
+      <div className="flex justify-around items-center h-16 px-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -55,25 +55,29 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
             <Link
               key={item.href}
               href={item.href}
-              className="relative flex flex-col items-center justify-center flex-1 transition-all active:scale-95"
+              className="relative flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-95 select-none pointer-events-auto"
             >
-              <Icon
-                className={`w-6 h-6 ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-              />
+              <div className="relative">
+                <Icon
+                  className={`w-6 h-6 transition-colors ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
+
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="absolute -top-1 -right-2 bg-primary text-primary-foreground text-[9px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center font-bold border-2 border-background shadow-sm">
+                    {item.badge > 99 ? "99+" : item.badge}
+                  </span>
+                )}
+              </div>
+
               <span
-                className={`text-[10px] mt-1 font-bold ${
+                className={`text-[10px] mt-1 font-bold transition-colors ${
                   isActive ? "text-primary" : "text-muted-foreground"
                 }`}
               >
                 {item.label}
               </span>
-              {item.badge !== undefined && item.badge > 0 && (
-                <span className="absolute top-1 right-1/4 bg-primary text-primary-foreground text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center font-black border-2 border-background">
-                  {item.badge}
-                </span>
-              )}
             </Link>
           );
         })}
@@ -81,7 +85,7 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
         {user ? (
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <button className="cursor-pointer flex flex-col items-center justify-center flex-1 transition-all active:scale-95 outline-none">
+              <button className="flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-95 outline-none select-none pointer-events-auto cursor-pointer">
                 <User
                   className={`w-6 h-6 ${
                     pathname.startsWith("/profile")
@@ -102,12 +106,12 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
             </SheetTrigger>
             <SheetContent
               side="bottom"
-              className="rounded-t-[24px] px-4 pb-8 border-t border-border bg-card"
+              className="rounded-t-[24px] px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] border-t border-border bg-card"
             >
               <SheetHeader className="text-left mb-4">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 font-bold text-lg overflow-hidden relative ${
+                    className={`w-12 h-12 rounded-full flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 font-bold text-lg overflow-hidden relative ${
                       !(
                         user.image && !user.image.includes("default-avatar.png")
                       )
@@ -193,7 +197,7 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
                     toast.success("Вы успешно вышли");
                     setIsOpen(false);
                   }}
-                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-destructive active:bg-destructive/5 transition-colors w-full"
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-destructive active:bg-destructive/5 transition-colors w-full cursor-pointer"
                 >
                   <LogOut size={18} />
                   <span className="font-bold text-sm">Выйти</span>
@@ -203,7 +207,7 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
           </Sheet>
         ) : (
           <AuthModal>
-            <button className="flex flex-col items-center justify-center flex-1 transition-all active:scale-95 cursor-pointer outline-none">
+            <button className="flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-95 cursor-pointer outline-none select-none pointer-events-auto">
               <User className="w-6 h-6 text-muted-foreground" />
               <span className="text-[10px] mt-1 font-bold text-muted-foreground">
                 Войти

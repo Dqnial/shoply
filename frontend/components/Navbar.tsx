@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Heart, ShoppingCart, Loader2 } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
@@ -15,9 +16,35 @@ export default function Navbar() {
   const { user, isChecking, isAuthChecked } = useAuthStore();
   const cartCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
 
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const controlNavbar = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY < 10) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", controlNavbar);
+    return () => window.removeEventListener("scroll", controlNavbar);
+  }, [lastScrollY]);
+
   return (
     <>
-      <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
+      <nav
+        className={`sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md transition-transform duration-300 ${
+          isVisible ? "translate-y-0" : "-translate-y-full md:translate-y-0"
+        }`}
+      >
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-12">
             <Link
@@ -69,13 +96,13 @@ export default function Navbar() {
               variant="ghost"
               size="icon"
               asChild
-              className="relative hidden md:flex cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+              className="hidden md:flex cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all relative"
             >
               <Link href="/cart">
                 <ShoppingCart className="w-5! h-5!" />
                 {cartCount > 0 && (
-                  <span className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold border border-background">
-                    {cartCount}
+                  <span className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] min-w-[14px] h-3.5 px-0.5 rounded-full flex items-center justify-center font-bold border border-background">
+                    {cartCount > 99 ? "99+" : cartCount}
                   </span>
                 )}
               </Link>

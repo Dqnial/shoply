@@ -1,11 +1,12 @@
 "use client";
 
 import { useFavoriteStore } from "@/store/useFavoriteStore";
-import { Heart, ShoppingBag, HeartOff } from "lucide-react";
+import { ShoppingBag, HeartOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { API_URL } from "@/lib/axios";
+import { getPlural } from "@/lib/utils";
 
 export default function FavoritesPage() {
   const { favorites, removeFromFavorites } = useFavoriteStore();
@@ -13,7 +14,6 @@ export default function FavoritesPage() {
   if (favorites.length === 0) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
-        {/* Placeholder в стиле корзины */}
         <div className="bg-secondary/30 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 text-muted-foreground">
           <HeartOff size={40} />
         </div>
@@ -39,11 +39,10 @@ export default function FavoritesPage() {
         <h1 className="text-4xl font-bold uppercase tracking-tighter text-primary">
           Избранное
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground font-medium">
           У вас {favorites.length}{" "}
-          {favorites.length === 1
-            ? "сохраненный товар"
-            : "товаров в списке желаний"}
+          {getPlural(favorites.length, ["товар", "товара", "товаров"])} в списке
+          желаний
         </p>
       </div>
 
@@ -63,9 +62,9 @@ export default function FavoritesPage() {
               />
               <button
                 onClick={() => removeFromFavorites(product._id)}
-                className="absolute top-4 right-4 w-10 h-10 bg-background/80 backdrop-blur-md rounded-xl flex items-center justify-center text-destructive shadow-sm hover:bg-destructive hover:text-white transition-all cursor-pointer z-10"
+                className="absolute top-3 right-3 w-9 h-9 bg-background/90 backdrop-blur-md rounded-full flex items-center justify-center text-destructive shadow-sm transition-all active:scale-90 cursor-pointer z-10 border border-border/40 hover:bg-destructive hover:text-white"
               >
-                <HeartOff size={18} />
+                <HeartOff size={16} />
               </button>
             </div>
 
