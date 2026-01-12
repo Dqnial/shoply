@@ -22,8 +22,9 @@ export default function Navbar() {
   useEffect(() => {
     const controlNavbar = () => {
       const currentScrollY = window.scrollY;
+      const navbarHeight = 80;
 
-      if (currentScrollY < 10) {
+      if (currentScrollY <= navbarHeight) {
         setIsVisible(true);
       } else if (currentScrollY > lastScrollY) {
         setIsVisible(false);
@@ -41,7 +42,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md transition-transform duration-300 ${
+        className={`fixed top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md transition-transform duration-300 ${
           isVisible ? "translate-y-0" : "-translate-y-full md:translate-y-0"
         }`}
       >
