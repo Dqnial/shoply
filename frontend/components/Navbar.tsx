@@ -20,24 +20,31 @@ export default function Navbar() {
   const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
-    const controlNavbar = () => {
-      const currentScrollY = window.scrollY;
-      const navbarHeight = 80;
+  const controlNavbar = () => {
+    const currentScrollY = window.scrollY;
+    const navbarHeight = 80;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
 
-      if (currentScrollY <= navbarHeight) {
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY) {
-        setIsVisible(false);
-      } else {
+    if (currentScrollY < 0 || currentScrollY > maxScroll) {
+      return;
+    }
+
+    if (currentScrollY <= navbarHeight) {
+      setIsVisible(true);
+    } else if (currentScrollY > lastScrollY) {
+      setIsVisible(false);
+    } else {
+      if (lastScrollY - currentScrollY > 5) {
         setIsVisible(true);
       }
+    }
 
-      setLastScrollY(currentScrollY);
-    };
+    setLastScrollY(currentScrollY);
+  };
 
-    window.addEventListener("scroll", controlNavbar);
-    return () => window.removeEventListener("scroll", controlNavbar);
-  }, [lastScrollY]);
+  window.addEventListener("scroll", controlNavbar, { passive: true });
+  return () => window.removeEventListener("scroll", controlNavbar);
+}, [lastScrollY]);
 
   return (
     <>
