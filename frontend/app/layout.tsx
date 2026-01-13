@@ -40,7 +40,7 @@ export default function RootLayout({
         <AuthInitializer>
           <Toaster
             toastOptions={{
-              className: "mb-[70px] md:mb-0",
+              className: "mb-[calc(80px+env(safe-area-inset-bottom))] md:mb-0",
             }}
           />
           <Navbar />
