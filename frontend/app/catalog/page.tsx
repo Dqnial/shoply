@@ -32,7 +32,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Product } from "@/types";
 import CatalogSkeleton from "@/components/CatalogSkeleton";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ProductGridSkeleton } from "@/components/ProductGridSkeleton";
 
 const ITEMS_PER_PAGE = 6;
@@ -46,6 +45,8 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
 
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "all";
@@ -54,6 +55,23 @@ export default function CatalogPage() {
   const maxPrice = searchParams.get("maxPrice") || "";
   const sortBy = searchParams.get("sortBy") || "newest";
   const currentPage = Number(searchParams.get("page")) || 1;
+
+  const [searchInput, setSearchInput] = useState(search);
+
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const { data } = await api.get("/products/filters", {
+          params: { search, category, brand },
+        });
+        setAvailableCategories(data.categories);
+        setAvailableBrands(data.brands);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchFilters();
+  }, [search, category, brand]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -95,16 +113,29 @@ export default function CatalogPage() {
       if (name !== "page") {
         params.set("page", "1");
       }
-      if (name === "category") params.delete("brand");
       router.push(`${pathname}?${params.toString()}`, { scroll: false });
     },
     [searchParams, router, pathname]
   );
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== search) {
+        updateFilters("search", searchInput);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput, search, updateFilters]);
+
+  useEffect(() => {
+    setSearchInput(search);
+  }, [search]);
+
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const resetFilters = () => {
     router.push(pathname);
+    setSearchInput("");
   };
 
   const handlePageChange = (page: number) => {
@@ -146,8 +177,8 @@ export default function CatalogPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Модель, бренд..."
-                  value={search}
-                  onChange={(e) => updateFilters("search", e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-9 rounded-xl border-muted-foreground/20"
                 />
               </div>
@@ -160,12 +191,15 @@ export default function CatalogPage() {
                 onValueChange={(v) => updateFilters("category", v)}
               >
                 <SelectTrigger className="rounded-xl border-muted-foreground/20 w-full bg-background">
-                  <SelectValue />
+                  <SelectValue placeholder="Все категории" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Все категории</SelectItem>
-                  <SelectItem value="Смартфоны">Смартфоны</SelectItem>
-                  <SelectItem value="Ноутбуки">Ноутбуки</SelectItem>
+                  {availableCategories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -177,12 +211,15 @@ export default function CatalogPage() {
                 onValueChange={(v) => updateFilters("brand", v)}
               >
                 <SelectTrigger className="rounded-xl border-muted-foreground/20 w-full bg-background">
-                  <SelectValue />
+                  <SelectValue placeholder="Все бренды" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Все бренды</SelectItem>
-                  <SelectItem value="Apple">Apple</SelectItem>
-                  <SelectItem value="Samsung">Samsung</SelectItem>
+                  {availableBrands.map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -241,7 +278,7 @@ export default function CatalogPage() {
           </div>
         </aside>
 
-        <main className="lg:col-span-9">
+        <div className="lg:col-span-9">
           {loading ? (
             <ProductGridSkeleton />
           ) : products.length === 0 ? (
@@ -320,7 +357,7 @@ export default function CatalogPage() {
               )}
             </div>
           )}
-        </main>
+        </div>
       </div>
     </div>
   );

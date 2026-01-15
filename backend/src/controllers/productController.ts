@@ -1,31 +1,64 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import Product from "../models/Product.js";
 import { AuthRequest } from "../middleware/authMiddleware.js";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-interface ProductFilter {
-  name?: { $regex: string; $options: string };
-  category?: string;
-  brand?: string;
-  price?: { $gte?: number; $lte?: number };
-}
+// @desc    Получить список уникальных категорий и брендов (зависимые фильтры)
+// @route   GET /api/products/filters
+// @access  Public
+export const getProductFilters = async (req: Request, res: Response) => {
+  try {
+    const { category, brand, search } = req.query;
+
+    const baseQuery: any = {};
+
+    if (search) {
+      baseQuery.$or = [
+        { name: { $regex: String(search), $options: "i" } },
+        { brand: { $regex: String(search), $options: "i" } },
+      ];
+    }
+
+    const categoryQuery = { ...baseQuery };
+    if (brand && brand !== "all") {
+      categoryQuery.brand = String(brand);
+    }
+    const categories = await Product.distinct("category", categoryQuery);
+
+    const brandQuery = { ...baseQuery };
+    if (category && category !== "all") {
+      brandQuery.category = String(category);
+    }
+    const brands = await Product.distinct("brand", brandQuery);
+
+    res.json({ categories, brands });
+  } catch (error) {
+    res.status(500).json({ message: "Ошибка при получении фильтров" });
+  }
+};
 
 // @desc    Получить все товары
 // @route   GET /api/products
+// @access  Public
 export const getProducts = async (req: Request, res: Response) => {
   try {
     const limit = Number(req.query.limit) || 6;
     const page = Number(req.query.page) || 1;
 
-    const query: ProductFilter = {};
+    const query: any = {};
 
     if (req.query.search) {
-      query.name = { $regex: String(req.query.search), $options: "i" };
+      const searchRegex = String(req.query.search);
+      query.$or = [
+        { name: { $regex: searchRegex, $options: "i" } },
+        { brand: { $regex: searchRegex, $options: "i" } },
+      ];
     }
 
     if (req.query.category && req.query.category !== "all") {
@@ -43,7 +76,6 @@ export const getProducts = async (req: Request, res: Response) => {
     }
 
     const sort: Record<string, 1 | -1> = {};
-
     if (req.query.sortBy === "price-asc") {
       sort.price = 1;
     } else if (req.query.sortBy === "price-desc") {
@@ -53,7 +85,6 @@ export const getProducts = async (req: Request, res: Response) => {
     }
 
     const totalCount = await Product.countDocuments(query);
-
     const products = await Product.find(query)
       .sort(sort)
       .limit(limit)
@@ -72,40 +103,17 @@ export const getProducts = async (req: Request, res: Response) => {
 
 // @desc    Получить один товар по ID
 // @route   GET /api/products/:id
+// @access  Public
 export const getProductById = async (req: Request, res: Response) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ message: "Неверный формат ID" });
+  }
+
   const product = await Product.findById(req.params.id);
   if (product) {
     res.json(product);
   } else {
-    res.status(404);
-    throw new Error("Товар не найден");
-  }
-};
-
-// @desc    Удалить товар
-// @route   DELETE /api/products/:id
-// @access  Private/Admin
-export const deleteProduct = async (req: Request, res: Response) => {
-  const product = await Product.findById(req.params.id);
-
-  if (product) {
-    if (product.image && !product.image.includes("sample.jpg")) {
-      const absolutePath = path.resolve(
-        __dirname,
-        "../../",
-        product.image.replace(/^\//, "")
-      );
-
-      if (fs.existsSync(absolutePath)) {
-        fs.unlinkSync(absolutePath);
-      }
-    }
-
-    await product.deleteOne();
-    res.json({ message: "Товар и изображение удалены" });
-  } else {
-    res.status(404);
-    throw new Error("Товар не найден");
+    res.status(404).json({ message: "Товар не найден" });
   }
 };
 
@@ -136,6 +144,10 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 // @route   PUT /api/products/:id
 // @access  Private/Admin
 export const updateProduct = async (req: Request, res: Response) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ message: "Неверный формат ID" });
+  }
+
   const { name, price, description, image, brand, category, countInStock } =
     req.body;
   const product = await Product.findById(req.params.id);
@@ -151,8 +163,10 @@ export const updateProduct = async (req: Request, res: Response) => {
         "../../",
         product.image.replace(/^\//, "")
       );
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
+      try {
+        await fs.unlink(oldPath);
+      } catch (err) {
+        console.log(err);
       }
     }
 
@@ -167,7 +181,37 @@ export const updateProduct = async (req: Request, res: Response) => {
     const updatedProduct = await product.save();
     res.json(updatedProduct);
   } else {
-    res.status(404);
-    throw new Error("Товар не найден");
+    res.status(404).json({ message: "Товар не найден" });
+  }
+};
+
+// @desc    Удалить товар
+// @route   DELETE /api/products/:id
+// @access  Private/Admin
+export const deleteProduct = async (req: Request, res: Response) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ message: "Неверный формат ID" });
+  }
+
+  const product = await Product.findById(req.params.id);
+
+  if (product) {
+    if (product.image && !product.image.includes("sample.jpg")) {
+      const absolutePath = path.resolve(
+        __dirname,
+        "../../",
+        product.image.replace(/^\//, "")
+      );
+      try {
+        await fs.unlink(absolutePath);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+
+    await product.deleteOne();
+    res.json({ message: "Товар и изображение удалены" });
+  } else {
+    res.status(404).json({ message: "Товар не найден" });
   }
 };
