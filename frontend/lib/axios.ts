@@ -20,14 +20,29 @@ api.interceptors.request.use((config) => {
 });
 
 export const adminApi = {
-  getProducts: () => api.get("/products"),
+  // --- ТОВАРЫ (Products) ---
+  getProducts: (config?: any) => api.get("/products", config),
   getProductById: (id: string | string[]) => api.get(`/products/${id}`),
-  createProduct: () => api.post("/products"),
-  deleteProduct: (id: string) => api.delete(`/products/${id}`),
+  createProduct: (data = {}) => api.post("/products", data),
   updateProduct: (id: string, data: any) => api.put(`/products/${id}`, data),
+  deleteProduct: (id: string) => api.delete(`/products/${id}`),
   uploadImage: (data: FormData) => api.post("/upload", data),
+  deleteImage: (imagePath: string) =>
+    api.delete("/upload", { data: { path: imagePath } }),
+  // --- ЗАКАЗЫ (Orders) ---
   getOrders: () => api.get("/orders"),
+  getSummary: () => api.get("/orders/summary"),
+  payOrder: (id: string) => api.put(`/orders/${id}/pay`),
+  deliverOrder: (id: string) => api.put(`/orders/${id}/deliver`),
+  deleteOrder: (id: string) => api.delete(`/orders/${id}`),
+
+  // --- ПОЛЬЗОВАТЕЛИ (Users) ---
   getUsers: () => api.get("/users"),
+  getUserById: (id: string) => api.get(`/users/${id}`),
+  updateUser: (id: string, data: any) => api.put(`/users/${id}`, data),
+  deleteUser: (id: string) => api.delete(`/users/${id}`),
+  adminTopUpBalance: (id: string, amount: number) =>
+    api.put(`/users/${id}/balance`, { amount }),
 };
 
 export const userApi = {

@@ -19,8 +19,13 @@ import HeroSlider from "@/components/HeroSlider";
 async function getProducts() {
   try {
     const { data } = await api.get("/products");
-    return data;
+
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.products)) return data.products;
+
+    return [];
   } catch (err) {
+    console.error("Ошибка при загрузке товаров:", err);
     return [];
   }
 }

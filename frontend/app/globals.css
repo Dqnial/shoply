@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+[aria-label="Go to previous page"] span,
+[aria-label="Go to next page"] span {
+  display: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

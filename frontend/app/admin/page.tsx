@@ -1,201 +1,293 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { adminApi, API_URL } from "@/lib/axios";
+import Image from "next/image";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  TrendingUp,
   Users,
   Package,
-  CreditCard,
-  ArrowUpRight,
-  Download,
+  ShoppingCart,
+  DollarSign,
+  Loader2,
+  Trophy,
+  Activity,
+  ShoppingBag,
 } from "lucide-react";
-import Link from "next/link";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  Bar,
+  BarChart,
+  YAxis,
+} from "recharts";
+import { Badge } from "@/components/ui/badge";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+
+const chartConfig = {
+  sales: { label: "Выручка", color: "hsl(var(--primary))" },
+  count: { label: "Товаров", color: "hsl(var(--primary))" },
+} satisfies ChartConfig;
 
 export default function AdminDashboard() {
-  return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Дашборд
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Обзор показателей магазина SHOPLY.
-          </p>
-        </div>
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const { data } = await adminApi.getSummary();
+        setSummary(data);
+      } catch (error) {
+        console.error("Ошибка:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSummary();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-40">
+        <Loader2 className="text-primary animate-spin" size={32} />
       </div>
+    );
+  }
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Доход"
-          value="2,450,000 ₸"
-          icon={<TrendingUp size={18} className="text-emerald-500" />}
-          trend="+18% за месяц"
-          trendPositive={true}
-        />
-        <StatCard
-          title="Заказы"
-          value="+12"
-          icon={<Package size={18} className="text-blue-500" />}
-          trend="4 в обработке"
-          trendPositive={null}
-        />
-        <StatCard
-          title="Клиенты"
-          value="1,240"
-          icon={<Users size={18} className="text-amber-500" />}
-          trend="+48 сегодня"
-          trendPositive={true}
-        />
-        <StatCard
-          title="Средний чек"
-          value="15,400 ₸"
-          icon={<CreditCard size={18} className="text-purple-500" />}
-          trend="+2.4% рост"
-          trendPositive={true}
-        />
-      </div>
-
-      <Card className="rounded-xl border border-border shadow-sm overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/10 py-4">
-          <div className="space-y-1">
-            <CardTitle className="text-lg font-medium">
-              Последние заказы
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Оперативная информация о транзакциях
-            </CardDescription>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="rounded-lg h-8 text-xs font-medium"
-            asChild
-          >
-            <Link href="/admin/orders">
-              Все заказы <ArrowUpRight className="ml-1 h-3 w-3" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow className="hover:bg-transparent border-b">
-                <TableHead className="py-3 px-4 font-medium">ID</TableHead>
-                <TableHead className="font-medium">Покупатель</TableHead>
-                <TableHead className="font-medium text-center">
-                  Статус
-                </TableHead>
-                <TableHead className="text-right font-medium pr-6">
-                  Сумма
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <RecentOrderRow
-                id="#ORD-7421"
-                user="Даниал С."
-                status="Paid"
-                amount="45,000 ₸"
-              />
-              <RecentOrderRow
-                id="#ORD-7420"
-                user="Мария К."
-                status="Processing"
-                amount="12,500 ₸"
-              />
-              <RecentOrderRow
-                id="#ORD-7419"
-                user="Арман И."
-                status="Shipped"
-                amount="89,900 ₸"
-              />
-              <RecentOrderRow
-                id="#ORD-7418"
-                user="Елена В."
-                status="Paid"
-                amount="5,400 ₸"
-              />
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function StatCard({ title, value, icon, trend, trendPositive }: any) {
   return (
-    <Card className="rounded-xl border border-border shadow-sm hover:shadow-md transition-all duration-200">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {title}
-        </span>
-        <div className="p-2 bg-muted/50 rounded-lg">{icon}</div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold tracking-tight">{value}</div>
-        <div className="flex items-center mt-1">
-          <span
-            className={`text-[11px] font-medium ${
-              trendPositive ? "text-emerald-600" : "text-muted-foreground"
-            }`}
-          >
-            {trend}
+    <div className="container mx-auto px-4 py-10 space-y-6">
+      {/* HEADER - Убрали mb-10 для нормального отступа */}
+      <div className="space-y-1">
+        <h1 className="text-4xl font-bold uppercase tracking-tighter text-primary">
+          Дашборд
+        </h1>
+        <p className="text-muted-foreground">
+          Всего заказов:{" "}
+          <span className="text-foreground font-medium">
+            {summary?.numOrders}
           </span>
+        </p>
+      </div>
+
+      {/* KPI КАРТОЧКИ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          {
+            label: "Выручка",
+            val: `${summary?.totalSales?.toLocaleString()} ₸`,
+            icon: DollarSign,
+          },
+          { label: "Заказы", val: summary?.numOrders, icon: ShoppingCart },
+          { label: "Клиенты", val: summary?.numUsers, icon: Users },
+          { label: "Товары", val: summary?.numProducts, icon: Package },
+        ].map((kpi, i) => (
+          <div
+            key={i}
+            className="rounded-[2rem] border border-muted-foreground/10 bg-background p-6 shadow-sm flex items-center gap-4"
+          >
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 shrink-0">
+              <kpi.icon size={22} />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">
+                {kpi.label}
+              </span>
+              <span className="text-xl font-bold text-foreground">
+                {kpi.val || 0}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* ГРАФИК ВЫРУЧКИ */}
+        <div className="lg:col-span-8 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
+          <div className="px-8 py-6 border-b border-muted-foreground/10 bg-muted/30 flex justify-between items-center">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Activity size={14} /> Динамика выручки
+            </h3>
+          </div>
+          <div className="p-6">
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <AreaChart
+                data={summary?.salesData || []}
+                margin={{ left: 12, right: 12 }}
+              >
+                <CartesianGrid vertical={false} strokeOpacity={0.1} />
+                <XAxis
+                  dataKey="_id"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={(val) =>
+                    val.split("-").reverse().slice(0, 2).join(".")
+                  }
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      className="rounded-xl border-muted-foreground/10 shadow-xl"
+                      indicator="line" // Добавляет индикатор, создавая визуальный отступ
+                      formatter={(value) =>
+                        ` ${Number(value).toLocaleString()} ₸`
+                      } // Пробел перед ценой
+                    />
+                  }
+                />
+                <Area
+                  dataKey="sales"
+                  type="monotone"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.1}
+                />
+              </AreaChart>
+            </ChartContainer>
+          </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
 
-function RecentOrderRow({ id, user, status, amount }: any) {
-  const statusConfig: any = {
-    Paid: {
-      label: "Оплачен",
-      class: "bg-emerald-500/5 text-emerald-600 border-emerald-500/10",
-    },
-    Processing: {
-      label: "В работе",
-      class: "bg-blue-500/5 text-blue-600 border-blue-500/10",
-    },
-    Shipped: {
-      label: "Доставка",
-      class: "bg-amber-500/5 text-amber-600 border-amber-500/10",
-    },
-  };
+        {/* КАТЕГОРИИ */}
+        <div className="lg:col-span-4 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
+          <div className="px-8 py-6 border-b border-muted-foreground/10 bg-muted/30">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <ShoppingBag size={14} /> Склад по категориям
+            </h3>
+          </div>
+          <div className="p-6">
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <BarChart
+                data={summary?.categoryData || []}
+                layout="vertical"
+                margin={{ left: -20 }}
+              >
+                <XAxis type="number" hide />
+                <YAxis
+                  dataKey="_id"
+                  type="category"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 10, fontWeight: 700 }}
+                  width={80}
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent hideLabel className="rounded-xl" />
+                  }
+                />
+                <Bar
+                  dataKey="count"
+                  fill="hsl(var(--primary))"
+                  radius={[0, 4, 4, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
+          </div>
+        </div>
 
-  return (
-    <TableRow className="border-b last:border-0 hover:bg-muted/10 transition-colors">
-      <TableCell className="px-4 py-3 text-sm font-medium">{id}</TableCell>
-      <TableCell className="text-sm text-muted-foreground">{user}</TableCell>
-      <TableCell className="text-center">
-        <Badge
-          variant="outline"
-          className={`rounded-md px-2 py-0.5 text-[10px] font-normal border ${statusConfig[status].class}`}
-        >
-          {statusConfig[status].label}
-        </Badge>
-      </TableCell>
-      <TableCell className="text-right pr-6 font-medium text-sm text-foreground">
-        {amount}
-      </TableCell>
-    </TableRow>
+        {/* ТОП ТОВАРОВ */}
+        <div className="lg:col-span-5 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
+          <div className="px-8 py-6 border-b border-muted-foreground/10 bg-muted/30">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Trophy size={14} /> Лидеры продаж
+            </h3>
+          </div>
+          <div className="p-6 space-y-6">
+            {summary?.topProducts?.map((item: any, idx: number) => (
+              <div key={idx} className="flex items-center gap-4">
+                <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-muted-foreground/10 bg-white shrink-0">
+                  <Image
+                    src={
+                      item.image.startsWith("http")
+                        ? item.image
+                        : `${API_URL}${item.image}`
+                    }
+                    alt={item.name}
+                    fill
+                    className="object-contain p-1"
+                    unoptimized
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-foreground truncate uppercase tracking-tighter">
+                    {item.name}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-widest">
+                    {item.salesCount} продаж
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ПОСЛЕДНИЕ ЗАКАЗЫ */}
+        <div className="lg:col-span-7 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
+          <div className="px-8 py-6 border-b border-muted-foreground/10 bg-muted/30">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              Последние заказы
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-muted-foreground/10 text-left">
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Клиент
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Сумма
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right">
+                    Статус
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-muted-foreground/10">
+                {summary?.latestOrders?.map((order: any) => (
+                  <tr
+                    key={order._id}
+                    className="hover:bg-muted/5 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm text-foreground uppercase tracking-tighter">
+                          {order.user?.name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-medium uppercase">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-sm">
+                      {order.totalPrice.toLocaleString()} ₸
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Badge
+                        className={`rounded-lg px-2 py-0.5 font-bold text-[10px] uppercase border-none ${
+                          order.status === "Завершен"
+                            ? "bg-emerald-500/10 text-emerald-500"
+                            : "bg-primary/10 text-primary"
+                        }`}
+                      >
+                        {order.status}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
