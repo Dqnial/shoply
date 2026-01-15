@@ -220,3 +220,79 @@ export const adminTopUpBalance = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Ошибка сервера" });
   }
 };
+
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+export const getUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await User.find({}).sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Ошибка при получении пользователей" });
+  }
+};
+
+// @desc    Get user by ID
+// @route   GET /api/users/:id
+// @access  Private/Admin
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ message: "Пользователь не найден" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
+};
+
+// @desc    Update user
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (user) {
+      user.name = req.body.name || user.name;
+      user.email = req.body.email || user.email;
+      user.isAdmin = req.body.isAdmin ?? user.isAdmin;
+
+      const updatedUser = await user.save();
+      res.json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        isAdmin: updatedUser.isAdmin,
+      });
+    } else {
+      res.status(404).json({ message: "Пользователь не найден" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Ошибка при обновлении" });
+  }
+};
+
+// @desc    Delete user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (user) {
+      if (user.isAdmin) {
+        return res
+          .status(400)
+          .json({ message: "Нельзя удалить администратора" });
+      }
+      await user.deleteOne();
+      res.json({ message: "Пользователь удален" });
+    } else {
+      res.status(404).json({ message: "Пользователь не найден" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Ошибка при удалении" });
+  }
+};

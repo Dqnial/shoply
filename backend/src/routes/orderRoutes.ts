@@ -4,24 +4,26 @@ import {
   getOrderById,
   getMyOrders,
   getOrders,
+  getOrderSummary,
+  updateOrderToPaid,
+  updateOrderToDelivered,
+  deleteOrder,
 } from "../controllers/orderController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/**
- * @desc    /api/orders
- */
-router.route("/").post(protect, addOrderItems).get(protect, admin, getOrders);
-
-/**
- * @desc    /api/orders/myorders
- */
+router.route("/summary").get(protect, admin, getOrderSummary);
 router.route("/myorders").get(protect, getMyOrders);
 
-/**
- * @desc    /api/orders/:id
- */
-router.route("/:id").get(protect, getOrderById);
+router.route("/").post(protect, addOrderItems).get(protect, admin, getOrders);
+
+router
+  .route("/:id")
+  .get(protect, getOrderById)
+  .delete(protect, admin, deleteOrder);
+
+router.route("/:id/pay").put(protect, admin, updateOrderToPaid);
+router.route("/:id/deliver").put(protect, admin, updateOrderToDelivered);
 
 export default router;
