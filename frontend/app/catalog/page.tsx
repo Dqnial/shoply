@@ -32,6 +32,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Product } from "@/types";
 import CatalogSkeleton from "@/components/CatalogSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ProductGridSkeleton } from "@/components/ProductGridSkeleton";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -42,6 +44,7 @@ export default function CatalogPage() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
 
   const search = searchParams.get("search") || "";
@@ -73,6 +76,7 @@ export default function CatalogPage() {
       console.error(err);
     } finally {
       setLoading(false);
+      setIsInitialLoading(false);
     }
   }, [currentPage, search, category, brand, minPrice, maxPrice, sortBy]);
 
@@ -83,19 +87,15 @@ export default function CatalogPage() {
   const updateFilters = useCallback(
     (name: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-
       if (value && value !== "all") {
         params.set(name, value);
       } else {
         params.delete(name);
       }
-
       if (name !== "page") {
         params.set("page", "1");
       }
-
       if (name === "category") params.delete("brand");
-
       router.push(`${pathname}?${params.toString()}`, { scroll: false });
     },
     [searchParams, router, pathname]
@@ -112,7 +112,7 @@ export default function CatalogPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (loading && products.length === 0) return <CatalogSkeleton />;
+  if (isInitialLoading) return <CatalogSkeleton />;
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -242,7 +242,9 @@ export default function CatalogPage() {
         </aside>
 
         <main className="lg:col-span-9">
-          {products.length === 0 && !loading ? (
+          {loading ? (
+            <ProductGridSkeleton />
+          ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed rounded-3xl bg-muted/5">
               <X className="h-12 w-12 text-muted-foreground/20 mb-4" />
               <p className="text-muted-foreground font-medium">
