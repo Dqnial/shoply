@@ -10,6 +10,8 @@ A complete online store built from scratch with Next.js and Express — catalog 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-green)
 ![TanStack Query](https://img.shields.io/badge/TanStack%20Query-caching-ff4154)
+![Zustand](https://img.shields.io/badge/Zustand-state-433E38)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-06B6D4)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
