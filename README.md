@@ -6,8 +6,11 @@ A complete online store built from scratch with Next.js and Express — catalog 
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](#-testing)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![Express](https://img.shields.io/badge/Express-5-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-green)
+![TanStack Query](https://img.shields.io/badge/TanStack%20Query-caching-ff4154)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 🔗 Live Demo
@@ -84,17 +87,29 @@ shoply/
 │   │   ├── controllers/    # request handlers (+ __tests__)
 │   │   ├── models/         # Mongoose schemas
 │   │   ├── routes/
-│   │   ├── middleware/     # auth, CSRF, validation, rate limiting
+│   │   ├── middleware/     # auth, CSRF, validation, rate limiting (+ __tests__)
 │   │   ├── validators/     # Zod schemas
 │   │   ├── utils/          # JWT/cookie helpers
+│   │   ├── config/         # DB connection
 │   │   └── test/           # test DB helper (in-memory replica set)
 │   └── .env.example
 └── frontend/
     ├── Dockerfile
     ├── app/                # Next.js App Router pages
-    ├── components/         # UI components (admin/, ui/, ...)
-    ├── store/              # Zustand stores
-    ├── lib/                # axios client, query client, utils
+    │   ├── (store)/        # storefront routes — own layout (Navbar/Footer)
+    │   └── admin/          # admin routes — own layout (sidebar)
+    ├── components/
+    │   ├── ui/             # shadcn/Radix primitives
+    │   ├── admin/           # tables & dialogs for the admin panel
+    │   ├── layout/          # Navbar, Footer, AdminSidebar, MobileNav, UserMenu
+    │   ├── modals/          # auth modal, ⌘K search
+    │   ├── product/         # ProductCard, HeroSlider
+    │   ├── providers/       # Query/Auth/Theme providers
+    │   ├── skeletons/       # loading placeholders
+    │   └── home/            # homepage sections
+    ├── hooks/              # page logic (catalog filters, checkout, forms, search)
+    ├── store/              # Zustand stores (cart, favorites, auth)
+    ├── lib/                # axios client, query client, theme, utils
     └── .env.example
 ```
 
