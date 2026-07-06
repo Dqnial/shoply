@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
-import Product from "../models/Product.js";
+import mongoose, { QueryFilter } from "mongoose";
+import Product, { IProduct } from "../models/Product.js";
 import { AuthRequest } from "../middleware/authMiddleware.js";
 import fs from "fs/promises";
 import path from "path";
@@ -9,6 +9,45 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function parseObjectId(param: string | string[] | undefined) {
+  if (typeof param !== "string" || !mongoose.Types.ObjectId.isValid(param)) {
+    return null;
+  }
+  return param;
+}
+
+// Regex-escapes user input before it reaches $regex — otherwise a crafted
+// search string (nested quantifiers) can trigger catastrophic backtracking
+// against these public, unauthenticated endpoints.
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildSearchQuery(search: unknown) {
+  if (!search) return {};
+  const pattern = escapeRegex(String(search));
+  return {
+    $or: [
+      { name: { $regex: pattern, $options: "i" } },
+      { brand: { $regex: pattern, $options: "i" } },
+    ],
+  };
+}
+
+const UPLOADS_DIR = path.resolve(__dirname, "../../uploads");
+
+// Only ever unlink a file that (a) is actually inside uploads/ and (b) an
+// upload we generated — never trust an admin-supplied path straight into
+// fs.unlink, or a crafted "../../.env" value could delete an arbitrary file.
+function resolveOwnedUploadPath(imagePath: string): string | null {
+  if (!imagePath.startsWith("/uploads/")) return null;
+  const resolved = path.resolve(__dirname, "../../", imagePath.slice(1));
+  if (resolved !== UPLOADS_DIR && !resolved.startsWith(UPLOADS_DIR + path.sep)) {
+    return null;
+  }
+  return resolved;
+}
+
 // @desc    Получить список уникальных категорий и брендов (зависимые фильтры)
 // @route   GET /api/products/filters
 // @access  Public
@@ -16,14 +55,7 @@ export const getProductFilters = async (req: Request, res: Response) => {
   try {
     const { category, brand, search } = req.query;
 
-    const baseQuery: any = {};
-
-    if (search) {
-      baseQuery.$or = [
-        { name: { $regex: String(search), $options: "i" } },
-        { brand: { $regex: String(search), $options: "i" } },
-      ];
-    }
+    const baseQuery: QueryFilter<IProduct> = buildSearchQuery(search);
 
     const categoryQuery = { ...baseQuery };
     if (brand && brand !== "all") {
@@ -48,18 +80,13 @@ export const getProductFilters = async (req: Request, res: Response) => {
 // @access  Public
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const limit = Number(req.query.limit) || 6;
-    const page = Number(req.query.page) || 1;
+    const parsedLimit = Number(req.query.limit);
+    const parsedPage = Number(req.query.page);
+    const limit =
+      Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 6;
+    const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
-    const query: any = {};
-
-    if (req.query.search) {
-      const searchRegex = String(req.query.search);
-      query.$or = [
-        { name: { $regex: searchRegex, $options: "i" } },
-        { brand: { $regex: searchRegex, $options: "i" } },
-      ];
-    }
+    const query: QueryFilter<IProduct> = buildSearchQuery(req.query.search);
 
     if (req.query.category && req.query.category !== "all") {
       query.category = String(req.query.category);
@@ -69,10 +96,21 @@ export const getProducts = async (req: Request, res: Response) => {
       query.brand = String(req.query.brand);
     }
 
-    if (req.query.minPrice || req.query.maxPrice) {
+    // Number("") is 0 (finite!), so an empty-string param — the catalog's
+    // default "no filter set" state — must be treated as absent *before*
+    // the numeric conversion, or an unset price range silently becomes
+    // "price is exactly 0" and matches nothing.
+    const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined;
+    const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
+    if (
+      (minPrice !== undefined && Number.isFinite(minPrice)) ||
+      (maxPrice !== undefined && Number.isFinite(maxPrice))
+    ) {
       query.price = {};
-      if (req.query.minPrice) query.price.$gte = Number(req.query.minPrice);
-      if (req.query.maxPrice) query.price.$lte = Number(req.query.maxPrice);
+      if (minPrice !== undefined && Number.isFinite(minPrice))
+        query.price.$gte = minPrice;
+      if (maxPrice !== undefined && Number.isFinite(maxPrice))
+        query.price.$lte = maxPrice;
     }
 
     const sort: Record<string, 1 | -1> = {};
@@ -105,11 +143,12 @@ export const getProducts = async (req: Request, res: Response) => {
 // @route   GET /api/products/:id
 // @access  Public
 export const getProductById = async (req: Request, res: Response) => {
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  const id = parseObjectId(req.params.id);
+  if (!id) {
     return res.status(400).json({ message: "Неверный формат ID" });
   }
 
-  const product = await Product.findById(req.params.id);
+  const product = await Product.findById(id);
   if (product) {
     res.json(product);
   } else {
@@ -144,39 +183,34 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 // @route   PUT /api/products/:id
 // @access  Private/Admin
 export const updateProduct = async (req: Request, res: Response) => {
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  const id = parseObjectId(req.params.id);
+  if (!id) {
     return res.status(400).json({ message: "Неверный формат ID" });
   }
 
   const { name, price, description, image, brand, category, countInStock } =
     req.body;
-  const product = await Product.findById(req.params.id);
+  const product = await Product.findById(id);
 
   if (product) {
-    if (
-      image &&
-      product.image !== image &&
-      !product.image.includes("sample.jpg")
-    ) {
-      const oldPath = path.resolve(
-        __dirname,
-        "../../",
-        product.image.replace(/^\//, "")
-      );
-      try {
-        await fs.unlink(oldPath);
-      } catch (err) {
-        console.log(err);
+    if (image && product.image !== image && !product.image.includes("sample.jpg")) {
+      const oldPath = resolveOwnedUploadPath(product.image);
+      if (oldPath) {
+        try {
+          await fs.unlink(oldPath);
+        } catch (err) {
+          console.log(err);
+        }
       }
     }
 
-    product.name = name || product.name;
-    product.price = price || product.price;
-    product.description = description || product.description;
-    product.image = image || product.image;
-    product.brand = brand || product.brand;
-    product.category = category || product.category;
-    product.countInStock = countInStock || product.countInStock;
+    if (name !== undefined) product.name = name;
+    if (price !== undefined) product.price = price;
+    if (description !== undefined) product.description = description;
+    if (image !== undefined) product.image = image;
+    if (brand !== undefined) product.brand = brand;
+    if (category !== undefined) product.category = category;
+    if (countInStock !== undefined) product.countInStock = countInStock;
 
     const updatedProduct = await product.save();
     res.json(updatedProduct);
@@ -189,23 +223,22 @@ export const updateProduct = async (req: Request, res: Response) => {
 // @route   DELETE /api/products/:id
 // @access  Private/Admin
 export const deleteProduct = async (req: Request, res: Response) => {
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  const id = parseObjectId(req.params.id);
+  if (!id) {
     return res.status(400).json({ message: "Неверный формат ID" });
   }
 
-  const product = await Product.findById(req.params.id);
+  const product = await Product.findById(id);
 
   if (product) {
     if (product.image && !product.image.includes("sample.jpg")) {
-      const absolutePath = path.resolve(
-        __dirname,
-        "../../",
-        product.image.replace(/^\//, "")
-      );
-      try {
-        await fs.unlink(absolutePath);
-      } catch (err) {
-        console.log(err);
+      const absolutePath = resolveOwnedUploadPath(product.image);
+      if (absolutePath) {
+        try {
+          await fs.unlink(absolutePath);
+        } catch (err) {
+          console.log(err);
+        }
       }
     }
 

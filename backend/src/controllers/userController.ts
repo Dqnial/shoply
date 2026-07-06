@@ -1,13 +1,7 @@
 import { Request, Response } from "express";
 import User from "../models/User.js";
-import jwt from "jsonwebtoken";
 import type { AuthRequest } from "../middleware/authMiddleware.js";
-
-const generateToken = (userId: string): string => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET!, {
-    expiresIn: "30d",
-  });
-};
+import { setAuthCookies, clearAuthCookies } from "../utils/token.js";
 
 export const registerUser = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
@@ -17,7 +11,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     const user = await User.create({ name, email, password });
     if (user) {
-      const token = generateToken(user._id.toString());
+      setAuthCookies(res, user._id.toString());
       return res.status(201).json({
         _id: user._id,
         name: user.name,
@@ -26,7 +20,6 @@ export const registerUser = async (req: Request, res: Response) => {
         balance: user.balance,
         image: user.image,
         createdAt: user.createdAt,
-        token: token,
       });
     }
     return res.status(400).json({ message: "Неверные данные пользователя" });
@@ -40,7 +33,7 @@ export const authUser = async (req: Request, res: Response) => {
   try {
     const user = await User.findOne({ email });
     if (user && (await user.matchPassword(password))) {
-      const token = generateToken(user._id.toString());
+      setAuthCookies(res, user._id.toString());
       return res.json({
         _id: user._id,
         name: user.name,
@@ -54,7 +47,6 @@ export const authUser = async (req: Request, res: Response) => {
         city: user.city,
         street: user.street,
         house: user.house,
-        token: token,
       });
     }
     return res.status(401).json({ message: "Неверный пароль или email" });
@@ -106,7 +98,7 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
       }
 
       const updatedUser = await user.save();
-      const token = generateToken(updatedUser._id.toString());
+      setAuthCookies(res, updatedUser._id.toString());
 
       return res.json({
         _id: updatedUser._id,
@@ -120,7 +112,6 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
         house: updatedUser.house,
         isAdmin: updatedUser.isAdmin,
         balance: updatedUser.balance,
-        token: token,
       });
     }
     return res.status(404).json({ message: "Пользователь не найден" });
@@ -130,6 +121,7 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
 };
 
 export const logoutUser = (_req: Request, res: Response) => {
+  clearAuthCookies(res);
   return res.status(200).json({ message: "Вышли из системы" });
 };
 
@@ -154,16 +146,21 @@ export const topUpBalance = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: "Укажите корректную сумму" });
     }
 
-    const user = await User.findById(req.user?._id);
-    if (user) {
-      user.balance += amountNum;
-      const updatedUser = await user.save();
-      return res.status(200).json({
-        message: "Баланс успешно пополнен",
-        balance: updatedUser.balance,
-      });
+    // $inc is atomic at the document level, so concurrent top-ups can't
+    // clobber each other the way read-modify-write with .save() could.
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.user?._id },
+      { $inc: { balance: amountNum } },
+      { returnDocument: "after" }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Пользователь не найден" });
     }
-    return res.status(404).json({ message: "Пользователь не найден" });
+    return res.status(200).json({
+      message: "Баланс успешно пополнен",
+      balance: updatedUser.balance,
+    });
   } catch (error) {
     return res.status(500).json({ message: "Ошибка сервера" });
   }
@@ -178,19 +175,27 @@ export const withdrawBalance = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: "Укажите корректную сумму" });
     }
 
-    const user = await User.findById(req.user?._id);
-    if (user) {
-      if (user.balance < amountNum) {
-        return res.status(400).json({ message: "Недостаточно средств" });
+    // The balance >= amountNum check and the decrement happen as one atomic
+    // operation, so two concurrent withdrawals can't both read the same
+    // starting balance and each pass the "enough funds" check.
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.user?._id, balance: { $gte: amountNum } },
+      { $inc: { balance: -amountNum } },
+      { returnDocument: "after" }
+    );
+
+    if (!updatedUser) {
+      const exists = await User.findById(req.user?._id);
+      if (!exists) {
+        return res.status(404).json({ message: "Пользователь не найден" });
       }
-      user.balance -= amountNum;
-      const updatedUser = await user.save();
-      return res.status(200).json({
-        message: "Средства выведены",
-        balance: updatedUser.balance,
-      });
+      return res.status(400).json({ message: "Недостаточно средств" });
     }
-    return res.status(404).json({ message: "Пользователь не найден" });
+
+    return res.status(200).json({
+      message: "Средства выведены",
+      balance: updatedUser.balance,
+    });
   } catch (error) {
     return res.status(500).json({ message: "Ошибка сервера" });
   }
@@ -205,16 +210,19 @@ export const adminTopUpBalance = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Укажите корректную сумму" });
     }
 
-    const user = await User.findById(req.params.id);
-    if (!user) {
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.params.id },
+      { $inc: { balance: amountNum } },
+      { returnDocument: "after" }
+    );
+
+    if (!updatedUser) {
       return res.status(404).json({ message: "Пользователь не найден" });
     }
 
-    user.balance += amountNum;
-    await user.save();
     return res.status(200).json({
-      message: `Баланс пользователя ${user.name} обновлен`,
-      balance: user.balance,
+      message: `Баланс пользователя ${updatedUser.name} обновлен`,
+      balance: updatedUser.balance,
     });
   } catch (error) {
     return res.status(500).json({ message: "Ошибка сервера" });
@@ -226,7 +234,9 @@ export const adminTopUpBalance = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const users = await User.find({}).sort({ createdAt: -1 });
+    const users = await User.find({})
+      .select("-password")
+      .sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: "Ошибка при получении пользователей" });

@@ -3,6 +3,12 @@ import mongoose from "mongoose";
 const orderSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
+    // Client-generated key for one checkout attempt — lets addOrderItems
+    // collapse retries (flaky network, double-click, two tabs) into the
+    // single order that actually got created, instead of charging twice.
+    // sparse: true so older orders created before this field existed (no
+    // key at all) don't collide with each other under the unique index.
+    idempotencyKey: { type: String, unique: true, sparse: true },
     orderItems: [
       {
         name: { type: String, required: true },

@@ -5,8 +5,7 @@
     "moduleResolution": "NodeNext",
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": false,
-    "noImplicitAny": false,
+    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "typeRoots": ["./node_modules/@types"]
