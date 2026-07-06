@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Package, ArrowRight } from "lucide-react";
-import { useRouter } from "next/navigation";
 import {
   CommandDialog,
   CommandEmpty,
@@ -11,8 +10,9 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import api, { API_URL } from "@/lib/axios";
+import { API_URL } from "@/lib/axios";
 import Image from "next/image";
+import { useProductSearch } from "@/hooks/useProductSearch";
 
 const ProductSkeleton = () => (
   <div className="flex items-center gap-3 sm:gap-4 p-2 sm:p-3 rounded-[20px] animate-pulse">
@@ -26,58 +26,17 @@ const ProductSkeleton = () => (
 );
 
 export function SearchModal({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = React.useState(false);
-  const [products, setProducts] = React.useState<any[]>([]);
-  const [searchValue, setSearchValue] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-  const [isMac, setIsMac] = React.useState(false);
-  const router = useRouter();
-
-  React.useEffect(() => {
-    setIsMac(navigator.platform.toUpperCase().indexOf("MAC") >= 0);
-  }, []);
-
-  const fetchProducts = React.useCallback(async (query: string) => {
-    setLoading(true);
-    try {
-      const { data } = await api.get("/products", {
-        params: { search: query, limit: 8 },
-      });
-      setProducts(data.products || data);
-    } catch (error) {
-      console.error("Search fetch error:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      if (open) {
-        fetchProducts(searchValue);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchValue, open, fetchProducts]);
-
-  React.useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (
-        (e.key.toLowerCase() === "k" || e.key.toLowerCase() === "л") &&
-        (e.metaKey || e.ctrlKey)
-      ) {
-        e.preventDefault();
-        setOpen((prev) => !prev);
-      }
-    };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, []);
-
-  const runCommand = React.useCallback((command: () => unknown) => {
-    setOpen(false);
-    command();
-  }, []);
+  const {
+    open,
+    setOpen,
+    products,
+    searchValue,
+    setSearchValue,
+    loading,
+    isMac,
+    router,
+    runCommand,
+  } = useProductSearch();
 
   return (
     <>

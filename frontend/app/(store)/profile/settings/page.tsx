@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 import {
   User as UserIcon,
   MapPin,
@@ -19,82 +16,27 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
+import { useProfileSettingsForm } from "@/hooks/useProfileSettingsForm";
 
 export default function SettingsPage() {
-  const { user, updateProfile, isAuthLoading } = useAuthStore();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const DEFAULT_AVATAR = "/uploads/default-avatar.png";
-
-  const [activeTab, setActiveTab] = useState("profile");
-  const [showPassword, setShowPassword] = useState(false);
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    country: "",
-    city: "",
-    street: "",
-    house: "",
-    password: "",
-    image: DEFAULT_AVATAR,
-  });
-
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        country: user.country || "",
-        city: user.city || "",
-        street: user.street || "",
-        house: user.house || "",
-        password: "",
-        image: user.image || DEFAULT_AVATAR,
-      });
-    }
-  }, [user]);
-
-  const getInitials = (name: string) => name?.charAt(0).toUpperCase() || "U";
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, image: reader.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeAvatar = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setFormData({ ...formData, image: DEFAULT_AVATAR });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (formData.password) {
-      if (formData.password.length < 6) {
-        return toast.error("Пароль должен быть не менее 6 символов");
-      }
-      if (formData.password !== confirmPassword) {
-        return toast.error("Пароли не совпадают");
-      }
-    }
-
-    try {
-      await updateProfile(formData);
-      toast.success("Данные успешно сохранены");
-      setFormData((prev) => ({ ...prev, password: "" }));
-      setConfirmPassword("");
-    } catch (err) {
-      toast.error("Ошибка при обновлении");
-    }
-  };
+  const {
+    isAuthLoading,
+    fileInputRef,
+    activeTab,
+    changeTab,
+    showPassword,
+    setShowPassword,
+    confirmPassword,
+    setConfirmPassword,
+    formData,
+    setFormData,
+    getInitials,
+    handleImageUpload,
+    removeAvatar,
+    handleSubmit,
+    isCustomImage,
+    user,
+  } = useProfileSettingsForm();
 
   if (isAuthLoading && !user) {
     return (
@@ -104,9 +46,6 @@ export default function SettingsPage() {
       </div>
     );
   }
-
-  const isCustomImage =
-    formData.image && !formData.image.includes("default-avatar.png");
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -119,15 +58,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => {
-          setActiveTab(value);
-          setFormData((prev) => ({ ...prev, password: "" }));
-          setConfirmPassword("");
-        }}
-        className="space-y-8"
-      >
+      <Tabs value={activeTab} onValueChange={changeTab} className="space-y-8">
         <TabsList className="grid grid-cols-3 bg-secondary/20 p-1.5 rounded-[2rem] h-auto w-full max-w-2xl mx-auto md:mx-0">
           <TabsTrigger
             value="profile"

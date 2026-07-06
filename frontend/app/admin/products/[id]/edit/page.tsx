@@ -1,26 +1,15 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { adminApi, API_URL } from "@/lib/axios";
+import { use } from "react";
+import { API_URL } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Loader2, Upload, X } from "lucide-react";
-import { toast } from "sonner";
 import Link from "next/link";
-
-interface ProductFormData {
-  name: string;
-  price: number;
-  image: string;
-  brand: string;
-  category: string;
-  countInStock: number;
-  description: string;
-}
+import { useEditProductForm } from "@/hooks/useEditProductForm";
 
 export default function EditProductPage({
   params,
@@ -28,79 +17,15 @@ export default function EditProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const router = useRouter();
-
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
-  const [formData, setFormData] = useState<ProductFormData>({
-    name: "",
-    price: 0,
-    image: "",
-    brand: "",
-    category: "",
-    countInStock: 0,
-    description: "",
-  });
-
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        setLoading(true);
-        const { data } = await adminApi.getProductById(id);
-        setFormData({
-          name: data.name || "",
-          price: data.price || 0,
-          image: data.image || "",
-          brand: data.brand || "",
-          category: data.category || "",
-          countInStock: data.countInStock || 0,
-          description: data.description || "",
-        });
-      } catch (error) {
-        toast.error("Товар не найден");
-        router.push("/admin/products");
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (id) fetchProduct();
-  }, [id, router]);
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const bodyFormData = new FormData();
-    bodyFormData.append("image", file);
-
-    try {
-      setUploading(true);
-      const { data } = await adminApi.uploadImage(bodyFormData);
-      setFormData((prev) => ({ ...prev, image: data.image }));
-      toast.success("Изображение загружено");
-    } catch (error) {
-      toast.error("Ошибка загрузки");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setSubmitting(true);
-      await adminApi.updateProduct(id, formData);
-      toast.success("Данные обновлены");
-      router.push("/admin/products");
-      router.refresh();
-    } catch (error) {
-      toast.error("Ошибка сохранения");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const {
+    loading,
+    submitting,
+    uploading,
+    formData,
+    setFormData,
+    handleFileUpload,
+    handleSubmit,
+  } = useEditProductForm(id);
 
   if (loading)
     return (

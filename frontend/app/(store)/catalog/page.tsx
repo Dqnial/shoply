@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import ProductCard from "@/components/ProductCard";
-import api from "@/lib/axios";
+import { Suspense } from "react";
+import ProductCard from "@/components/product/ProductCard";
+import { useCatalogFilters } from "@/hooks/useCatalogFilters";
 import {
   Search,
   X,
@@ -30,118 +29,40 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
-import { Product } from "@/types";
-import CatalogSkeleton from "@/components/CatalogSkeleton";
-import { ProductGridSkeleton } from "@/components/ProductGridSkeleton";
-
-const ITEMS_PER_PAGE = 6;
+import CatalogSkeleton from "@/components/skeletons/CatalogSkeleton";
+import { ProductGridSkeleton } from "@/components/skeletons/ProductGridSkeleton";
 
 export default function CatalogPage() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
-
-  const search = searchParams.get("search") || "";
-  const category = searchParams.get("category") || "all";
-  const brand = searchParams.get("brand") || "all";
-  const minPrice = searchParams.get("minPrice") || "";
-  const maxPrice = searchParams.get("maxPrice") || "";
-  const sortBy = searchParams.get("sortBy") || "newest";
-  const currentPage = Number(searchParams.get("page")) || 1;
-
-  const [searchInput, setSearchInput] = useState(search);
-
-  useEffect(() => {
-    const fetchFilters = async () => {
-      try {
-        const { data } = await api.get("/products/filters", {
-          params: { search, category, brand },
-        });
-        setAvailableCategories(data.categories);
-        setAvailableBrands(data.brands);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchFilters();
-  }, [search, category, brand]);
-
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get("/products", {
-        params: {
-          page: currentPage,
-          limit: ITEMS_PER_PAGE,
-          search,
-          category,
-          brand,
-          minPrice,
-          maxPrice,
-          sortBy,
-        },
-      });
-      setProducts(data.products);
-      setTotalCount(data.totalCount);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setIsInitialLoading(false);
-    }
-  }, [currentPage, search, category, brand, minPrice, maxPrice, sortBy]);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
-  const updateFilters = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value && value !== "all") {
-        params.set(name, value);
-      } else {
-        params.delete(name);
-      }
-      if (name !== "page") {
-        params.set("page", "1");
-      }
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    },
-    [searchParams, router, pathname]
+  return (
+    <Suspense fallback={<CatalogSkeleton />}>
+      <CatalogView />
+    </Suspense>
   );
+}
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchInput !== search) {
-        updateFilters("search", searchInput);
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchInput, search, updateFilters]);
-
-  useEffect(() => {
-    setSearchInput(search);
-  }, [search]);
-
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
-
-  const resetFilters = () => {
-    router.push(pathname);
-    setSearchInput("");
-  };
-
-  const handlePageChange = (page: number) => {
-    updateFilters("page", String(page));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+function CatalogView() {
+  const {
+    category,
+    brand,
+    sortBy,
+    currentPage,
+    totalPages,
+    searchInput,
+    setSearchInput,
+    minPriceInput,
+    setMinPriceInput,
+    maxPriceInput,
+    setMaxPriceInput,
+    products,
+    totalCount,
+    availableCategories,
+    availableBrands,
+    isInitialLoading,
+    loading,
+    updateFilters,
+    resetFilters,
+    handlePageChange,
+  } = useCatalogFilters();
 
   if (isInitialLoading) return <CatalogSkeleton />;
 
@@ -262,15 +183,15 @@ export default function CatalogPage() {
                 <Input
                   type="number"
                   placeholder="От"
-                  value={minPrice}
-                  onChange={(e) => updateFilters("minPrice", e.target.value)}
+                  value={minPriceInput}
+                  onChange={(e) => setMinPriceInput(e.target.value)}
                   className="rounded-xl border-muted-foreground/20"
                 />
                 <Input
                   type="number"
                   placeholder="До"
-                  value={maxPrice}
-                  onChange={(e) => updateFilters("maxPrice", e.target.value)}
+                  value={maxPriceInput}
+                  onChange={(e) => setMaxPriceInput(e.target.value)}
                   className="rounded-xl border-muted-foreground/20"
                 />
               </div>

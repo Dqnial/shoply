@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import api, { API_URL } from "@/lib/axios";
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import api, { adminApi, API_URL } from "@/lib/axios";
+import { toast } from "sonner";
 import {
   Package,
   MapPin,
@@ -10,36 +12,59 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
-  ChevronLeft,
   Truck,
   User,
   Hash,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import type { PopulatedOrder } from "@/types";
 
 export default function AdminOrderDetailPage() {
   const { id } = useParams();
-  const router = useRouter();
-  const [order, setOrder] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<"pay" | "deliver" | null>(null);
 
-  const loadOrder = useCallback(async () => {
+  const {
+    data: order,
+    isPending,
+    refetch,
+  } = useQuery({
+    queryKey: ["orders", id],
+    queryFn: async () => {
+      const { data } = await api.get<PopulatedOrder>(`/orders/${id}`);
+      return data;
+    },
+  });
+
+  const handlePay = async () => {
+    if (!order) return;
+    setUpdating("pay");
     try {
-      const { data } = await api.get(`/orders/${id}`);
-      setOrder(data);
+      await adminApi.payOrder(order._id);
+      toast.success("Статус оплаты обновлен");
+      await refetch();
     } catch (error) {
-      console.error("Ошибка загрузки");
+      toast.error("Произошла ошибка");
     } finally {
-      setLoading(false);
+      setUpdating(null);
     }
-  }, [id]);
+  };
 
-  useEffect(() => {
-    loadOrder();
-  }, [loadOrder]);
+  const handleDeliver = async () => {
+    if (!order) return;
+    setUpdating("deliver");
+    try {
+      await adminApi.deliverOrder(order._id);
+      toast.success("Заказ отмечен как доставленный");
+      await refetch();
+    } catch (error) {
+      toast.error("Произошла ошибка");
+    } finally {
+      setUpdating(null);
+    }
+  };
 
-  if (loading)
+  if (isPending)
     return (
       <div className="flex items-center justify-center py-32">
         <Loader2 className="text-primary/20" size={32} />
@@ -77,13 +102,29 @@ export default function AdminOrderDetailPage() {
 
         <div className="flex items-center gap-2">
           {!order.isPaid && (
-            <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700 h-10 px-5 font-bold uppercase text-[10px] tracking-widest shadow-sm border-none">
-              Подтвердить оплату
+            <Button
+              onClick={handlePay}
+              disabled={updating !== null}
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 h-10 px-5 font-bold uppercase text-[10px] tracking-widest shadow-sm border-none cursor-pointer"
+            >
+              {updating === "pay" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Подтвердить оплату"
+              )}
             </Button>
           )}
           {!order.isDelivered && (
-            <Button className="rounded-xl bg-primary h-10 px-5 font-bold uppercase text-[10px] tracking-widest shadow-sm border-none">
-              Отметить доставку
+            <Button
+              onClick={handleDeliver}
+              disabled={updating !== null}
+              className="rounded-xl bg-primary h-10 px-5 font-bold uppercase text-[10px] tracking-widest shadow-sm border-none cursor-pointer"
+            >
+              {updating === "deliver" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Отметить доставку"
+              )}
             </Button>
           )}
         </div>
@@ -101,7 +142,7 @@ export default function AdminOrderDetailPage() {
               </span>
             </div>
             <div className="p-6">
-              {order.orderItems.map((item: any, index: number) => (
+              {order.orderItems.map((item, index) => (
                 <div
                   key={item._id}
                   className={`flex items-center gap-5 ${

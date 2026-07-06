@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useCartStore } from "@/store/useCartStore";
-import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import {
   Trash2,
@@ -17,102 +14,23 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import api, { API_URL } from "@/lib/axios";
-import { toast } from "sonner";
+import { API_URL } from "@/lib/axios";
 import { cn, getPlural } from "@/lib/utils";
+import { useCheckout } from "@/hooks/useCheckout";
 
 export default function CartPage() {
-  const router = useRouter();
-  const { cartItems, removeItem, updateQty, clearCart } = useCartStore();
-  const { user, updateBalance } = useAuthStore();
-  const [isPending, setIsPending] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"Card" | "Balance">(
-    "Balance"
-  );
-
-  const total = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
-
-  const handlePaymentMethodChange = (method: "Card" | "Balance") => {
-    if (method === "Card") {
-      toast.info(
-        "Оплата картой временно недоступна. Пожалуйста, используйте личный счет."
-      );
-      return;
-    }
-    setPaymentMethod(method);
-  };
-
-  const checkoutHandler = async () => {
-    if (!user) {
-      toast.error("Пожалуйста, войдите в аккаунт");
-      router.push("/login?redirect=/cart");
-      return;
-    }
-
-    if (!user.city || !user.street) {
-      toast.error("Заполните адрес доставки в профиле");
-      router.push("/profile");
-      return;
-    }
-
-    if (paymentMethod === "Balance" && (user.balance || 0) < total) {
-      toast.error("Недостаточно средств на личном счету");
-      return;
-    }
-
-    try {
-      setIsPending(true);
-      const orderData = {
-        orderItems: cartItems.map((item) => ({
-          name: item.name,
-          qty: item.qty,
-          image: item.image,
-          price: item.price,
-          product: item._id,
-        })),
-        shippingAddress: {
-          city: user.city,
-          address: `${user.street}, ${user.house || ""}`,
-          postalCode: "000000",
-          country: user.country || "Kazakhstan",
-        },
-        paymentMethod: paymentMethod,
-        itemsPrice: total,
-        shippingPrice: 0,
-        totalPrice: total,
-      };
-
-      const { data } = await api.post("/orders", orderData);
-
-      if (paymentMethod === "Balance") {
-        const newBalance = (user.balance || 0) - total;
-        updateBalance(newBalance);
-      }
-
-      toast.success("Заказ успешно оплачен и оформлен!");
-      clearCart();
-      router.push(`/profile/orders/${data._id}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Не удалось создать заказ");
-    } finally {
-      setIsPending(false);
-    }
-  };
-
-  const handleQtyChange = (item: any, newQty: number) => {
-    if (newQty < 1) return;
-    updateQty(item._id, newQty);
-  };
-
-  const handleInputChange = (item: any, value: string) => {
-    if (value === "") {
-      updateQty(item._id, 0);
-      return;
-    }
-    const numValue = parseInt(value);
-    if (!isNaN(numValue)) updateQty(item._id, numValue);
-  };
+  const {
+    cartItems,
+    removeItem,
+    user,
+    isPending,
+    paymentMethod,
+    total,
+    handlePaymentMethodChange,
+    checkoutHandler,
+    handleQtyChange,
+    handleInputChange,
+  } = useCheckout();
 
   if (cartItems.length === 0) {
     return (
@@ -189,7 +107,9 @@ export default function CartPage() {
                       type="number"
                       value={item.qty === 0 ? "" : item.qty}
                       onChange={(e) => handleInputChange(item, e.target.value)}
-                      onBlur={() => item.qty < 1 && updateQty(item._id, 1)}
+                      onBlur={() =>
+                        item.qty < 1 && handleQtyChange(item, 1)
+                      }
                       className="w-8 bg-transparent text-center text-xs font-bold focus:outline-none appearance-none"
                     />
                     <Button
@@ -226,7 +146,7 @@ export default function CartPage() {
             </h3>
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => setPaymentMethod("Balance")}
+                onClick={() => handlePaymentMethodChange("Balance")}
                 className={cn(
                   "relative flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer",
                   paymentMethod === "Balance"
@@ -321,7 +241,9 @@ export default function CartPage() {
                 </span>
               )}
             </Button>
-            {paymentMethod === "Balance" && user && user.balance < total && (
+            {paymentMethod === "Balance" &&
+              user &&
+              (user.balance || 0) < total && (
               <p className="text-[10px] text-center text-destructive font-bold uppercase tracking-tight">
                 Недостаточно средств
               </p>

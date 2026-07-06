@@ -1,14 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  LayoutDashboard,
-  Box,
-  ShoppingCart,
-  Users,
-  ArrowLeft,
-  Store,
-} from "lucide-react";
+import { LayoutDashboard, Box, ShoppingCart, Users, ArrowLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -36,30 +29,28 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" variant="inset">
-      <SidebarHeader className="p-4">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Store className="size-5" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-black tracking-tighter">SHOPLY</span>
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold">
-                    Admin Panel
-                  </span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+    <Sidebar variant="inset">
+      <SidebarHeader className="p-3">
+        <Link
+          href="/"
+          className="flex min-w-0 items-center gap-2 rounded-lg p-1 transition-colors hover:bg-sidebar-accent"
+        >
+          <div className="flex min-w-0 flex-col gap-0.5 leading-none">
+            <span className="truncate text-2xl font-black text-primary tracking-tighter">
+              SHOPLY.
+            </span>
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              Admin Panel
+            </span>
+          </div>
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Управление</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            Управление
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -67,7 +58,7 @@ export function AdminSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
-                    tooltip={item.title}
+                    className="cursor-pointer"
                   >
                     <Link href={item.url}>
                       <item.icon />
@@ -81,10 +72,10 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild className="cursor-pointer">
               <Link href="/">
                 <ArrowLeft />
                 <span>На сайт</span>

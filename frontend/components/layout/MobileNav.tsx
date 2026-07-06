@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   Home,
   LayoutGrid,
@@ -16,7 +17,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
-import AuthModal from "./AuthModal";
+import AuthModal from "../modals/AuthModal";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -26,15 +27,25 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { THEME_OPTIONS } from "@/lib/theme";
 
 export default function MobileNav({ cartCount }: { cartCount: number }) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
+  // Closing the sheet on navigation is a state *adjustment* in response to a
+  // prop change, not a synchronization with an external system — doing it
+  // during render (React's documented pattern for this) avoids the extra
+  // render an effect would cost, and sidesteps the "no setState in effects"
+  // purity rule.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setIsOpen(false);
-  }, [pathname]);
+  }
 
   const getInitials = (name: string) => name?.charAt(0).toUpperCase() || "U";
 
@@ -188,6 +199,31 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
                     <span className="font-semibold text-sm">Админ-панель</span>
                   </Link>
                 )}
+
+                <Separator className="my-2 opacity-50" />
+
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="font-semibold text-sm text-muted-foreground">
+                    Тема
+                  </span>
+                  <div className="flex items-center gap-1 bg-secondary/50 rounded-xl p-1">
+                    {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+                      <button
+                        key={value}
+                        onClick={() => setTheme(value)}
+                        aria-label={label}
+                        className={cn(
+                          "flex items-center justify-center w-9 h-9 rounded-lg transition-colors cursor-pointer",
+                          (theme ?? "system") === value
+                            ? "bg-background text-primary shadow-sm"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        <Icon size={16} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 <Separator className="my-2 opacity-50" />
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import api, { API_URL } from "@/lib/axios";
 import { Product } from "@/types";
 import { useCartStore } from "@/store/useCartStore";
@@ -13,25 +13,27 @@ import {
   ChevronLeft,
   ShieldCheck,
   Truck,
-  Loader2,
   Heart,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import ProductSkeleton from "@/components/ProductSkeleton";
+import ProductSkeleton from "@/components/skeletons/ProductSkeleton";
 
 export default function ProductPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [product, setProduct] = useState<Product | null>(null);
   const addItem = useCartStore((state) => state.addItem);
   const { addToFavorites, removeFromFavorites, isFavorite } =
     useFavoriteStore();
 
-  useEffect(() => {
-    api.get(`/products/${id}`).then((res) => setProduct(res.data));
-  }, [id]);
+  const { data: product } = useQuery({
+    queryKey: ["product", id],
+    queryFn: async () => {
+      const { data } = await api.get<Product>(`/products/${id}`);
+      return data;
+    },
+  });
 
   if (!product) return <ProductSkeleton />;
 

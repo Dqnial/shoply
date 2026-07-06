@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTheme } from "next-themes";
 import { adminApi, API_URL } from "@/lib/axios";
 import Image from "next/image";
 import {
@@ -12,15 +13,20 @@ import {
   Trophy,
   Activity,
   ShoppingBag,
+  Receipt,
+  PieChart as PieChartIcon,
+  UserPlus,
 } from "lucide-react";
 import {
   Area,
   AreaChart,
   CartesianGrid,
   XAxis,
+  Pie,
+  PieChart,
+  Cell,
   Bar,
   BarChart,
-  YAxis,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,30 +36,59 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
+// Validated categorical set (node scripts/validate_palette.js) — kept out of
+// the red/amber/green hue families below since those are already reserved
+// for order status meaning on this same dashboard.
+const CATEGORY_COLORS = {
+  light: ["#2a78d6", "#1baf7a", "#eda100", "#eb6834", "#008300"],
+  dark: ["#3987e5", "#199e70", "#c98500", "#d95926", "#008300"],
+};
+const CATEGORY_OTHER = { light: "#898781", dark: "#c3c2b7" };
+const MAX_CATEGORY_SLICES = CATEGORY_COLORS.light.length;
+
+// Sequential single-hue (magnitude, not identity) — kept distinct from the
+// "Оплачен" status slot since the two never appear in the same chart.
+const SEQUENTIAL_BLUE = { light: "#2a78d6", dark: "#3987e5" };
+
+// Order status is a fixed, reserved meaning (not "series N") — every order
+// carries exactly one of these five values (backend/src/models/Order.ts).
+const STATUS_COLORS: Record<string, { light: string; dark: string }> = {
+  "В обработке": { light: "#eda100", dark: "#c98500" },
+  Оплачен: { light: "#2a78d6", dark: "#3987e5" },
+  Доставляется: { light: "#1baf7a", dark: "#199e70" },
+  Завершен: { light: "#0ca30c", dark: "#008300" },
+  Отменен: { light: "#d03b3b", dark: "#e66767" },
+};
+const STATUS_FALLBACK = { light: "#898781", dark: "#c3c2b7" };
+
+/** Folds anything past the 5 validated slots into "Другое" instead of generating a new hue. */
+function groupCategoryTail(data: { _id: string; count: number }[]) {
+  if (data.length <= MAX_CATEGORY_SLICES) return data;
+  const head = data.slice(0, MAX_CATEGORY_SLICES - 1);
+  const tailCount = data
+    .slice(MAX_CATEGORY_SLICES - 1)
+    .reduce((sum, d) => sum + d.count, 0);
+  return [...head, { _id: "Другое", count: tailCount }];
+}
+
 const chartConfig = {
-  sales: { label: "Выручка", color: "hsl(var(--primary))" },
-  count: { label: "Товаров", color: "hsl(var(--primary))" },
+  sales: { label: "Выручка", color: "var(--primary)" },
+  count: { label: "Количество", color: "var(--primary)" },
 } satisfies ChartConfig;
 
 export default function AdminDashboard() {
-  const [summary, setSummary] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { resolvedTheme } = useTheme();
+  const mode = resolvedTheme === "dark" ? "dark" : "light";
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        const { data } = await adminApi.getSummary();
-        setSummary(data);
-      } catch (error) {
-        console.error("Ошибка:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSummary();
-  }, []);
+  const { data: summary, isPending } = useQuery({
+    queryKey: ["admin", "summary"],
+    queryFn: async () => {
+      const { data } = await adminApi.getSummary();
+      return data;
+    },
+  });
 
-  if (loading) {
+  if (isPending) {
     return (
       <div className="flex items-center justify-center py-40">
         <Loader2 className="text-primary animate-spin" size={32} />
@@ -77,7 +112,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI КАРТОЧКИ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         {[
           {
             label: "Выручка",
@@ -85,6 +120,13 @@ export default function AdminDashboard() {
             icon: DollarSign,
           },
           { label: "Заказы", val: summary?.numOrders, icon: ShoppingCart },
+          {
+            label: "Средний чек",
+            val: `${Math.round(
+              (summary?.totalSales || 0) / (summary?.numOrders || 1)
+            ).toLocaleString()} ₸`,
+            icon: Receipt,
+          },
           { label: "Клиенты", val: summary?.numUsers, icon: Users },
           { label: "Товары", val: summary?.numProducts, icon: Package },
         ].map((kpi, i) => (
@@ -142,66 +184,209 @@ export default function AdminDashboard() {
                     />
                   }
                 />
+                <defs>
+                  <linearGradient id="fillSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--primary)"
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--primary)"
+                      stopOpacity={0.02}
+                    />
+                  </linearGradient>
+                </defs>
                 <Area
                   dataKey="sales"
                   type="monotone"
-                  stroke="hsl(var(--primary))"
+                  stroke="var(--primary)"
                   strokeWidth={2}
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.1}
+                  fill="url(#fillSales)"
                 />
               </AreaChart>
             </ChartContainer>
           </div>
         </div>
 
-        {/* КАТЕГОРИИ */}
+        {/* ЗАКАЗЫ ПО СТАТУСАМ */}
         <div className="lg:col-span-4 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
           <div className="px-8 py-6 border-b border-muted-foreground/10 bg-muted/30">
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <ShoppingBag size={14} /> Склад по категориям
+              <PieChartIcon size={14} /> Заказы по статусам
             </h3>
           </div>
-          <div className="p-6">
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <BarChart
-                data={summary?.categoryData || []}
-                layout="vertical"
-                margin={{ left: -20 }}
-              >
-                <XAxis type="number" hide />
-                <YAxis
-                  dataKey="_id"
-                  type="category"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 10, fontWeight: 700 }}
-                  width={80}
-                />
+          <div className="p-6 flex flex-col items-center gap-6">
+            <ChartContainer config={chartConfig} className="h-55 w-full">
+              <PieChart>
                 <ChartTooltip
                   content={
                     <ChartTooltipContent hideLabel className="rounded-xl" />
                   }
                 />
+                <Pie
+                  data={summary?.statusData || []}
+                  dataKey="count"
+                  nameKey="_id"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={3}
+                  strokeWidth={0}
+                >
+                  {(summary?.statusData || []).map((entry) => (
+                    <Cell
+                      key={entry._id}
+                      fill={
+                        (STATUS_COLORS[entry._id] || STATUS_FALLBACK)[mode]
+                      }
+                    />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+            <div className="w-full space-y-2">
+              {summary?.statusData?.map((s) => (
+                <div
+                  key={s._id}
+                  className="flex items-center justify-between text-xs font-medium"
+                >
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <span
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: (STATUS_COLORS[s._id] ||
+                          STATUS_FALLBACK)[mode],
+                      }}
+                    />
+                    {s._id}
+                  </span>
+                  <span className="text-foreground font-bold">{s.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* НОВЫЕ ПОЛЬЗОВАТЕЛИ */}
+        <div className="lg:col-span-6 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
+          <div className="px-8 py-6 border-b border-muted-foreground/10 bg-muted/30">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <UserPlus size={14} /> Новые пользователи
+            </h3>
+          </div>
+          <div className="p-6">
+            <ChartContainer config={chartConfig} className="h-55 w-full">
+              <BarChart
+                data={summary?.usersData || []}
+                margin={{ left: 12, right: 12 }}
+              >
+                <CartesianGrid vertical={false} strokeOpacity={0.1} />
+                <XAxis
+                  dataKey="_id"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={(val) =>
+                    val.split("-").reverse().slice(0, 2).join(".")
+                  }
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      hideLabel
+                      className="rounded-xl"
+                      formatter={(value) => ` ${value}`}
+                    />
+                  }
+                />
                 <Bar
                   dataKey="count"
-                  fill="hsl(var(--primary))"
-                  radius={[0, 4, 4, 0]}
+                  fill={SEQUENTIAL_BLUE[mode]}
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={28}
                 />
               </BarChart>
             </ChartContainer>
           </div>
         </div>
 
+        {/* КАТЕГОРИИ */}
+        <div className="lg:col-span-6 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
+          <div className="px-8 py-6 border-b border-muted-foreground/10 bg-muted/30">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <ShoppingBag size={14} /> Склад по категориям
+            </h3>
+          </div>
+          <div className="p-6 flex flex-col sm:flex-row items-center gap-6">
+            <ChartContainer
+              config={chartConfig}
+              className="h-55 w-full sm:w-55 shrink-0"
+            >
+              <PieChart>
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent hideLabel className="rounded-xl" />
+                  }
+                />
+                <Pie
+                  data={groupCategoryTail(summary?.categoryData || [])}
+                  dataKey="count"
+                  nameKey="_id"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={3}
+                  strokeWidth={0}
+                >
+                  {groupCategoryTail(summary?.categoryData || []).map(
+                    (entry, i) => (
+                      <Cell
+                        key={entry._id}
+                        fill={
+                          entry._id === "Другое"
+                            ? CATEGORY_OTHER[mode]
+                            : CATEGORY_COLORS[mode][i]
+                        }
+                      />
+                    )
+                  )}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+            <div className="w-full space-y-2">
+              {groupCategoryTail(summary?.categoryData || []).map((c, i) => (
+                <div
+                  key={c._id}
+                  className="flex items-center justify-between text-xs font-medium"
+                >
+                  <span className="flex items-center gap-2 text-muted-foreground uppercase tracking-tighter font-bold">
+                    <span
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{
+                        backgroundColor:
+                          c._id === "Другое"
+                            ? CATEGORY_OTHER[mode]
+                            : CATEGORY_COLORS[mode][i],
+                      }}
+                    />
+                    {c._id}
+                  </span>
+                  <span className="text-foreground font-bold">{c.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* ТОП ТОВАРОВ */}
-        <div className="lg:col-span-5 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
+        <div className="lg:col-span-6 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
           <div className="px-8 py-6 border-b border-muted-foreground/10 bg-muted/30">
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <Trophy size={14} /> Лидеры продаж
             </h3>
           </div>
           <div className="p-6 space-y-6">
-            {summary?.topProducts?.map((item: any, idx: number) => (
+            {summary?.topProducts?.map((item, idx) => (
               <div key={idx} className="flex items-center gap-4">
                 <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-muted-foreground/10 bg-white shrink-0">
                   <Image
@@ -230,7 +415,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* ПОСЛЕДНИЕ ЗАКАЗЫ */}
-        <div className="lg:col-span-7 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
+        <div className="lg:col-span-6 rounded-[2rem] border border-muted-foreground/10 bg-background overflow-hidden shadow-sm">
           <div className="px-8 py-6 border-b border-muted-foreground/10 bg-muted/30">
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
               Последние заказы
@@ -252,7 +437,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-muted-foreground/10">
-                {summary?.latestOrders?.map((order: any) => (
+                {summary?.latestOrders?.map((order) => (
                   <tr
                     key={order._id}
                     className="hover:bg-muted/5 transition-colors"

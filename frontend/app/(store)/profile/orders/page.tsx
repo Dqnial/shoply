@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { userApi } from "@/lib/axios";
 import {
-  Loader2,
   PackageOpen,
   ShoppingBag,
   ChevronRight,
@@ -12,21 +11,19 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link"; // Импортируем Link
-import OrdersSkeleton from "@/components/OrdersSkeleton";
+import Link from "next/link";
+import OrdersSkeleton from "@/components/skeletons/OrdersSkeleton";
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: orders = [], isPending } = useQuery({
+    queryKey: ["orders", "mine"],
+    queryFn: async () => {
+      const { data } = await userApi.getMyOrders();
+      return data;
+    },
+  });
 
-  useEffect(() => {
-    userApi
-      .getMyOrders()
-      .then((res) => setOrders(res.data))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <OrdersSkeleton />;
+  if (isPending) return <OrdersSkeleton />;
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -80,7 +77,7 @@ export default function OrdersPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {orders.map((order: any) => (
+                {orders.map((order) => (
                   <Link
                     key={order._id}
                     href={`/profile/orders/${order._id}`}

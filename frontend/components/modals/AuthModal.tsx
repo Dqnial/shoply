@@ -87,7 +87,9 @@ export default function AuthModal({
       }
       setOpen(false);
       resetFormState();
-    } catch (err: any) {}
+    } catch {
+      // Ошибка уже отражена в serverError стора useAuthStore.
+    }
   };
 
   const displayError = localError || serverError;

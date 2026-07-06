@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useTheme } from "next-themes";
 import {
   User,
   Package,
@@ -16,15 +17,30 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "sonner";
+import type { User as UserType } from "@/types";
+import { THEME_OPTIONS } from "@/lib/theme";
 
-export default function UserMenu({ user }: { user: any }) {
+export default function UserMenu({ user }: { user: UserType }) {
   const { logout } = useAuthStore();
+  const { theme, setTheme } = useTheme();
   const getInitials = (name: string) => name?.charAt(0).toUpperCase() || "U";
+
+  // Radix's DropdownMenuContent isn't rendered on the server, so `theme`
+  // (only known client-side) can't cause a hydration mismatch here.
+  const currentTheme = theme ?? "system";
+  const currentOption =
+    THEME_OPTIONS.find((option) => option.value === currentTheme) ??
+    THEME_OPTIONS[2];
 
   return (
     <DropdownMenu>
@@ -127,6 +143,31 @@ export default function UserMenu({ user }: { user: any }) {
               </Link>
             </DropdownMenuItem>
           )}
+        </div>
+        <DropdownMenuSeparator className="opacity-50" />
+        <div className="p-1">
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="rounded-xl focus:bg-primary/5 cursor-pointer px-3 py-2.5 transition-colors">
+              <currentOption.icon size={16} className="text-muted-foreground" />
+              <span className="font-medium text-sm">
+                Тема: {currentOption.label}
+              </span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="rounded-xl p-1.5 bg-card border-border shadow-xl">
+              <DropdownMenuRadioGroup value={currentTheme} onValueChange={setTheme}>
+                {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+                  <DropdownMenuRadioItem
+                    key={value}
+                    value={value}
+                    className="rounded-lg focus:bg-primary/5 cursor-pointer transition-colors"
+                  >
+                    <Icon size={14} className="text-muted-foreground" />
+                    <span className="text-sm font-medium">{label}</span>
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
         </div>
         <DropdownMenuSeparator className="opacity-50" />
         <div className="p-1">

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Search, Heart, ShoppingCart, Loader2 } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
-import { SearchModal } from "./SearchModal";
-import AuthModal from "./AuthModal";
+import { SearchModal } from "../modals/SearchModal";
+import AuthModal from "../modals/AuthModal";
 import UserMenu from "./UserMenu";
 import MobileNav from "./MobileNav";
 
@@ -17,34 +17,35 @@ export default function Navbar() {
   const cartCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
 
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
-  const controlNavbar = () => {
-    const currentScrollY = window.scrollY;
-    const navbarHeight = 80;
-    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const controlNavbar = () => {
+      const currentScrollY = window.scrollY;
+      const navbarHeight = 80;
+      const maxScroll =
+        document.documentElement.scrollHeight - window.innerHeight;
 
-    if (currentScrollY < 0 || currentScrollY > maxScroll) {
-      return;
-    }
-
-    if (currentScrollY <= navbarHeight) {
-      setIsVisible(true);
-    } else if (currentScrollY > lastScrollY) {
-      setIsVisible(false);
-    } else {
-      if (lastScrollY - currentScrollY > 5) {
-        setIsVisible(true);
+      if (currentScrollY < 0 || currentScrollY > maxScroll) {
+        return;
       }
-    }
 
-    setLastScrollY(currentScrollY);
-  };
+      if (currentScrollY <= navbarHeight) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY.current) {
+        setIsVisible(false);
+      } else {
+        if (lastScrollY.current - currentScrollY > 5) {
+          setIsVisible(true);
+        }
+      }
 
-  window.addEventListener("scroll", controlNavbar, { passive: true });
-  return () => window.removeEventListener("scroll", controlNavbar);
-}, [lastScrollY]);
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", controlNavbar, { passive: true });
+    return () => window.removeEventListener("scroll", controlNavbar);
+  }, []);
 
   return (
     <>

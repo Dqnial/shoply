@@ -1,45 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import api, { API_URL } from "@/lib/axios";
 import {
-  Package,
   MapPin,
   Wallet,
   CheckCircle2,
   Clock,
-  ArrowLeft,
-  Loader2,
-  ShoppingBag,
-  ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import OrderDetailsSkeleton from "@/components/OrderDetailsSkeleton";
+import OrderDetailsSkeleton from "@/components/skeletons/OrderDetailsSkeleton";
+import type { PopulatedOrder } from "@/types";
 
 export default function OrderDetailsPage() {
   const { id } = useParams();
-  const router = useRouter();
-  const [order, setOrder] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        const { data } = await api.get(`/orders/${id}`);
-        setOrder(data);
-      } catch (err) {
-        console.error("Order Load Error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrder();
-  }, [id]);
+  const { data: order, isPending } = useQuery({
+    queryKey: ["orders", id],
+    queryFn: async () => {
+      const { data } = await api.get<PopulatedOrder>(`/orders/${id}`);
+      return data;
+    },
+  });
 
-  if (loading) return <OrderDetailsSkeleton />;
+  if (isPending) return <OrderDetailsSkeleton />;
 
   if (!order)
     return (
@@ -74,7 +61,7 @@ export default function OrderDetailsPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Товары */}
           <div className="space-y-3">
-            {order.orderItems.map((item: any, index: number) => (
+            {order.orderItems.map((item, index) => (
               <div
                 key={index}
                 className="group flex items-center gap-6 bg-card p-4 rounded-2xl border border-border/60 transition-all hover:border-primary/20"
