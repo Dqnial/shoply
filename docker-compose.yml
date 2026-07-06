@@ -37,9 +37,11 @@ services:
         }
       '
 
-  backend:
+  # One process, one port: Express (backend) hosts Next.js (frontend)
+  # internally via a custom server — see backend/src/server.ts.
+  app:
     build:
-      context: ./backend
+      context: .
     depends_on:
       mongo-init:
         condition: service_completed_successfully
@@ -47,27 +49,12 @@ services:
       MONGODB_URI: mongodb://mongo:27017/shoply?replicaSet=rs0
       JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
       PORT: 5000
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:5000
       NODE_ENV: production
     ports:
       - "5000:5000"
     volumes:
-      - backend-uploads:/app/uploads
-
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        # Baked into the browser bundle — must be reachable from the host.
-        NEXT_PUBLIC_API_URL: http://localhost:5000
-    environment:
-      # Read at runtime (not inlined) for server-side rendering inside this
-      # container, where "localhost" would resolve to itself, not backend.
-      API_URL: http://backend:5000
-    depends_on:
-      - backend
-    ports:
-      - "3000:3000"
+      - backend-uploads:/app/backend/uploads
 
 volumes:
   mongo-data:

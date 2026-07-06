@@ -10,7 +10,11 @@ import {
   User,
 } from "@/types";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// Empty by default: the unified server (backend/src/server.ts) serves the
+// frontend and the API from the same origin, so a relative "/api" and
+// relative "/uploads/..." image paths already resolve correctly. Only set
+// NEXT_PUBLIC_API_URL if the API genuinely lives on a different origin.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const SAFE_METHODS = new Set(["get", "head", "options"]);
 

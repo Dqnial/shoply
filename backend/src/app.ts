@@ -16,30 +16,39 @@ import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 // to index.ts without risking it happening too late.
 dotenv.config();
 
-const app = express();
+// Builds the API surface (middleware + routes + /uploads static) without the
+// root test route or error handlers — the piece the unified server.ts reuses
+// so it can add its own Next.js catch-all afterwards. The standalone `app`
+// below (used by index.ts and the test suite) adds those back on top.
+export function createApiApp() {
+  const app = express();
 
-// Middleware
-app.use(
-  helmet({
-    // Продукты и аватары раздаются с /uploads и грузятся фронтендом с
-    // другого origin (localhost:3000) — по умолчанию helmet это блокирует.
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
-);
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+  app.use(
+    helmet({
+      // Продукты и аватары раздаются с /uploads и грузятся фронтендом с
+      // другого origin (localhost:3000) — по умолчанию helmet это блокирует.
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
+  app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cookieParser());
 
-// Эндпоинты API
-app.use("/api/users", userRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/upload", uploadRoutes);
+  // Эндпоинты API
+  app.use("/api/users", userRoutes);
+  app.use("/api/products", productRoutes);
+  app.use("/api/orders", orderRoutes);
+  app.use("/api/upload", uploadRoutes);
 
-// Статическая папка для загрузок
-const __dirname = path.resolve();
-app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
+  // Статическая папка для загрузок
+  const __dirname = path.resolve();
+  app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
+
+  return app;
+}
+
+const app = createApiApp();
 
 // Базовый роут для проверки сервера
 app.get("/", (req: Request, res: Response) => {

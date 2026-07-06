@@ -78,14 +78,28 @@ This isn't just CRUD with a login form — a few things were deliberately harden
 - **Vitest + Supertest + mongodb-memory-server** — integration tests against a real (in-memory) replica set
 - **Helmet, express-rate-limit, cookie-parser**
 
+## 🧩 Architecture: one process, one port
+
+Express is the single entry point in production (`backend/src/server.ts`) — it
+serves `/api/*` itself and hosts Next.js internally as a custom server
+(`next()` programmatic API) for every other route. The browser only ever
+talks to one origin, which sidesteps CORS and cross-site cookie
+(`SameSite`) complications entirely, and means deploying the whole app is
+one web service, not two. `backend/src/index.ts` + `app.ts` still expose the
+API on its own (no frontend) for the test suite and for anyone who wants to
+run the API standalone.
+
 ## 🏗️ Project Structure
 
 ```
 shoply/
-├── docker-compose.yml      # mongo (replica set) + backend + frontend, one command
+├── Dockerfile              # builds the unified server (see Architecture above)
+├── docker-compose.yml      # mongo (replica set) + the unified app, one command
 ├── backend/
-│   ├── Dockerfile
 │   ├── src/
+│   │   ├── server.ts       # unified entry point: Express + Next.js, one port
+│   │   ├── index.ts        # API-only entry point (used by tests)
+│   │   ├── app.ts          # Express app/middleware/routes
 │   │   ├── controllers/    # request handlers (+ __tests__)
 │   │   ├── models/         # Mongoose schemas
 │   │   ├── routes/
@@ -96,7 +110,6 @@ shoply/
 │   │   └── test/           # test DB helper (in-memory replica set)
 │   └── .env.example
 └── frontend/
-    ├── Dockerfile
     ├── app/                # Next.js App Router pages
     │   ├── (store)/        # storefront routes — own layout (Navbar/Footer)
     │   └── admin/          # admin routes — own layout (sidebar)
@@ -129,9 +142,9 @@ cp .env.example .env   # optional — sets JWT_SECRET; a dev default is used oth
 docker compose up --build
 ```
 
-Frontend: [http://localhost:3000](http://localhost:3000) · Backend: [http://localhost:5000](http://localhost:5000)
+Everything — frontend and API — is on [http://localhost:5000](http://localhost:5000).
 
-This spins up MongoDB as a single-node **replica set** (required — the app uses multi-document transactions, which a standalone `mongod` doesn't support), auto-initializes it, then builds and starts the backend and frontend. Uploaded images and the database persist in Docker volumes across restarts (`docker compose down -v` to wipe them).
+This spins up MongoDB as a single-node **replica set** (required — the app uses multi-document transactions, which a standalone `mongod` doesn't support), auto-initializes it, then builds and starts the unified app. Uploaded images and the database persist in Docker volumes across restarts (`docker compose down -v` to wipe them).
 
 ### Option B — Run locally without Docker
 
@@ -144,18 +157,27 @@ cd shoply
 cd backend && npm install && cp .env.example .env
 # fill in MONGODB_URI and JWT_SECRET in backend/.env
 
-cd ../frontend && npm install && cp .env.example .env.local
+cd ../frontend && npm install
 ```
 
-Then, in two terminals:
+One terminal, one command:
 
 ```bash
-# terminal 1
 cd backend && npm run dev
-
-# terminal 2
-cd frontend && npm run dev
 ```
+
+Everything is on [http://localhost:5000](http://localhost:5000) (or whatever `PORT` is set to in `backend/.env`).
+
+### Deploying (Render, Railway, Fly.io, …)
+
+The unified architecture means this is **one web service**, not two. On a
+Docker-based host: point it at the repo root (the `Dockerfile` here builds
+both projects into one image), set `MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`,
+and `FRONTEND_URL` to the service's own public URL. MongoDB Atlas needs
+`0.0.0.0/0` in Network Access unless the host has a static outbound IP.
+Product-image uploads (`multer` → `backend/uploads/`) need a persistent
+volume/disk — most PaaS free tiers have an ephemeral filesystem, so
+uploaded images won't survive a redeploy without one.
 
 ## 🧪 Testing
 

@@ -5,9 +5,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --exclude \"../frontend/**\" src/server.ts",
+    "dev:api": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/server.js",
+    "start:api": "node dist/index.js",
     "test": "vitest run"
   },
   "keywords": [],
@@ -24,6 +26,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.1",
     "multer": "^2.0.2",
+    "next": "16.1.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

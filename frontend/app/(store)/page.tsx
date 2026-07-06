@@ -15,14 +15,13 @@ import NewsletterSection from "@/components/home/NewsletterSection";
 // being built, which would otherwise freeze this section empty forever.
 export const dynamic = "force-dynamic";
 
-// This runs server-side (inside the Next.js server/container), not in the
-// browser. NEXT_PUBLIC_API_URL is baked in at build time for the browser to
-// use (e.g. "http://localhost:5000", the port published on the host) — but
-// from inside a Docker container that address points at the frontend
-// container itself, not the backend one. API_URL (no NEXT_PUBLIC_ prefix,
-// so it's read fresh at runtime rather than inlined) lets Docker override
-// this to the backend's service name, e.g. "http://backend:5000".
-const SERVER_API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL;
+// This runs server-side, inside the same process as the Express API
+// (backend/src/server.ts calls next() programmatically) — so it can't use a
+// relative "/api" path the way browser requests do; there's no "current
+// origin" concept for a server-side fetch. It loops back to the server's
+// own port instead.
+const SERVER_API_URL =
+  process.env.API_URL || `http://localhost:${process.env.PORT || 3000}`;
 
 async function getProducts() {
   try {
