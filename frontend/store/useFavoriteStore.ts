@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { Product } from "@/types";
 
 interface FavoriteStore {
-  favorites: any[];
-  addToFavorites: (product: any) => void;
+  favorites: Product[];
+  addToFavorites: (product: Product) => void;
   removeFromFavorites: (productId: string) => void;
   isFavorite: (productId: string) => boolean;
 }

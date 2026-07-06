@@ -1,28 +1,8 @@
 import { create } from "zustand";
+import { persist, type PersistStorage } from "zustand/middleware";
 import { userApi } from "@/lib/axios";
-
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  isAdmin: boolean;
-  createdAt: Date;
-  balance: number;
-  phone?: string;
-  country?: string;
-  city?: string;
-  street?: string;
-  house?: string;
-  image?: string;
-  token?: string;
-}
-
-interface AuthFormData {
-  name?: string;
-  email?: string;
-  password?: string;
-  confirmPassword?: string;
-}
+import { getErrorMessage } from "@/lib/utils";
+import type { AuthFormData, User } from "@/types";
 
 interface AuthState {
   user: User | null;
@@ -39,103 +19,122 @@ interface AuthState {
   updateBalance: (newBalance: number) => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user:
-    typeof window !== "undefined"
-      ? JSON.parse(localStorage.getItem("userInfo") || "null")
-      : null,
-  isChecking: true,
-  isAuthChecked: false,
-  isAuthLoading: false,
-  error: null,
+type PersistedAuth = Pick<AuthState, "user">;
 
-  clearError: () => set({ error: null }),
-
-  checkAuth: async () => {
-    if (typeof window !== "undefined" && !localStorage.getItem("userInfo")) {
-      set({ user: null, isAuthChecked: true, isChecking: false });
-      return;
-    }
-
-    try {
-      const { data } = await userApi.getProfile();
-      const localData = JSON.parse(localStorage.getItem("userInfo") || "{}");
-      const updatedUser = { ...localData, ...data };
-
-      localStorage.setItem("userInfo", JSON.stringify(updatedUser));
-      set({ user: updatedUser, isAuthChecked: true });
-    } catch {
-      localStorage.removeItem("userInfo");
-      set({ user: null, isAuthChecked: true });
-    } finally {
-      set({ isChecking: false });
+// The JWT itself lives in an httpOnly cookie now (set by the backend) and is
+// never readable from JS. This only caches the non-sensitive user profile
+// under the pre-existing "userInfo" key so the UI can render optimistically
+// before checkAuth() confirms the session with the server.
+const userInfoStorage: PersistStorage<PersistedAuth> = {
+  getItem: (name) => {
+    if (typeof window === "undefined") return null;
+    const raw = localStorage.getItem(name);
+    return raw ? { state: { user: JSON.parse(raw) } } : null;
+  },
+  setItem: (name, value) => {
+    if (typeof window === "undefined") return;
+    if (value.state.user) {
+      localStorage.setItem(name, JSON.stringify(value.state.user));
+    } else {
+      localStorage.removeItem(name);
     }
   },
+  removeItem: (name) => {
+    if (typeof window !== "undefined") localStorage.removeItem(name);
+  },
+};
 
-  login: async (formData) => {
-    set({ isAuthLoading: true, error: null });
-    try {
-      const { data } = await userApi.login(formData);
-      localStorage.setItem("userInfo", JSON.stringify(data));
-      set({ user: data, isAuthChecked: true });
-    } catch (err: any) {
-      const msg = err.response?.data?.message || "Ошибка входа";
-      set({ error: msg });
-      throw new Error(msg);
-    } finally {
-      set({ isAuthLoading: false });
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      isChecking: true,
+      isAuthChecked: false,
+      isAuthLoading: false,
+      error: null,
+
+      clearError: () => set({ error: null }),
+
+      checkAuth: async () => {
+        if (!get().user) {
+          set({ isAuthChecked: true, isChecking: false });
+          return;
+        }
+
+        try {
+          const { data } = await userApi.getProfile();
+          set((state) => ({
+            user: { ...state.user, ...data },
+            isAuthChecked: true,
+          }));
+        } catch {
+          set({ user: null, isAuthChecked: true });
+        } finally {
+          set({ isChecking: false });
+        }
+      },
+
+      login: async (formData) => {
+        set({ isAuthLoading: true, error: null });
+        try {
+          const { data } = await userApi.login(formData);
+          set({ user: data, isAuthChecked: true });
+        } catch (err) {
+          const msg = getErrorMessage(err, "Ошибка входа");
+          set({ error: msg });
+          throw new Error(msg);
+        } finally {
+          set({ isAuthLoading: false });
+        }
+      },
+
+      register: async (formData) => {
+        set({ isAuthLoading: true, error: null });
+        try {
+          const { data } = await userApi.register(formData);
+          set({ user: data, isAuthChecked: true });
+        } catch (err) {
+          const msg = getErrorMessage(err, "Ошибка регистрации");
+          set({ error: msg });
+          throw new Error(msg);
+        } finally {
+          set({ isAuthLoading: false });
+        }
+      },
+
+      logout: async () => {
+        set({ isAuthLoading: true });
+        try {
+          await userApi.logout().catch(() => {});
+        } finally {
+          set({ user: null, isAuthChecked: true, isAuthLoading: false });
+        }
+      },
+
+      updateProfile: async (formData) => {
+        set({ isAuthLoading: true, error: null });
+        try {
+          const { data } = await userApi.updateProfile(formData);
+          set((state) => ({ user: { ...state.user, ...data } }));
+        } catch (err) {
+          const msg = getErrorMessage(err, "Ошибка обновления профиля");
+          set({ error: msg });
+          throw new Error(msg);
+        } finally {
+          set({ isAuthLoading: false });
+        }
+      },
+
+      updateBalance: (newBalance) => {
+        set((state) =>
+          state.user ? { user: { ...state.user, balance: newBalance } } : state
+        );
+      },
+    }),
+    {
+      name: "userInfo",
+      storage: userInfoStorage,
+      partialize: (state) => ({ user: state.user }),
     }
-  },
-
-  register: async (formData) => {
-    set({ isAuthLoading: true, error: null });
-    try {
-      const { data } = await userApi.register(formData);
-      localStorage.setItem("userInfo", JSON.stringify(data));
-      set({ user: data, isAuthChecked: true });
-    } catch (err: any) {
-      const msg = err.response?.data?.message || "Ошибка регистрации";
-      set({ error: msg });
-      throw new Error(msg);
-    } finally {
-      set({ isAuthLoading: false });
-    }
-  },
-
-  logout: async () => {
-    set({ isAuthLoading: true });
-    try {
-      await userApi.logout().catch(() => {});
-    } finally {
-      localStorage.removeItem("userInfo");
-      set({ user: null, isAuthChecked: true, isAuthLoading: false });
-    }
-  },
-
-  updateProfile: async (formData) => {
-    set({ isAuthLoading: true, error: null });
-    try {
-      const { data } = await userApi.updateProfile(formData);
-      const localData = JSON.parse(localStorage.getItem("userInfo") || "{}");
-      const updatedUser = { ...localData, ...data };
-
-      localStorage.setItem("userInfo", JSON.stringify(updatedUser));
-      set({ user: updatedUser });
-    } catch (err: any) {
-      const msg = err.response?.data?.message || "Ошибка обновления профиля";
-      set({ error: msg });
-      throw new Error(msg);
-    } finally {
-      set({ isAuthLoading: false });
-    }
-  },
-
-  updateBalance: (newBalance) => {
-    set((state) => {
-      if (!state.user) return state;
-      const updatedUser = { ...state.user, balance: newBalance };
-      localStorage.setItem("userInfo", JSON.stringify(updatedUser));
-      return { user: updatedUser };
-    });
-  },
-}));
+  )
+);

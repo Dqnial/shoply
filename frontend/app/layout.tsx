@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import AuthInitializer from "@/components/AuthInitializer";
+import AuthInitializer from "@/components/providers/AuthInitializer";
 import { Toaster } from "sonner";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import QueryProvider from "@/components/providers/QueryProvider";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -29,25 +28,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={inter.className}>
+    <html lang="ru" className={inter.className} suppressHydrationWarning>
       <body>
-        {/* <ThemeProvider
+        <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-        > */}
-        <AuthInitializer>
-          <Toaster
-            toastOptions={{
-              className: "mb-[calc(70px+env(safe-area-inset-bottom))] md:mb-0",
-            }}
-          />
-          <Navbar />
-          <main className="flex-grow pt-20">{children}</main>
-          <Footer />
-        </AuthInitializer>
-        {/* </ThemeProvider> */}
+        >
+          <QueryProvider>
+            <AuthInitializer>
+              <Toaster
+                toastOptions={{
+                  className:
+                    "mb-[calc(70px+env(safe-area-inset-bottom))] md:mb-0",
+                }}
+              />
+              {children}
+            </AuthInitializer>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
