@@ -1,0 +1,74 @@
+services:
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # One-shot job: initializes the single-node replica set exactly once.
+  # Orders/balance updates use multi-document transactions, which MongoDB
+  # only supports on a replica set — a plain standalone mongod won't work.
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: "no"
+    # NOTE: this must be `command`, not `entrypoint` — overriding entrypoint
+    # would leave the mongo image's default CMD ("mongod") appended as a
+    # trailing argument to mongosh. The image's own docker-entrypoint.sh
+    # sees a command that isn't "mongod" and execs it directly, unchanged.
+    command: >
+      mongosh --host mongo:27017 --eval '
+        try {
+          rs.status();
+          print("Replica set already initialized");
+        } catch (e) {
+          print("Initializing replica set...");
+          rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "mongo:27017" }] });
+        }
+      '
+
+  backend:
+    build:
+      context: ./backend
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/shoply?replicaSet=rs0
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      PORT: 5000
+      FRONTEND_URL: http://localhost:3000
+      NODE_ENV: production
+    ports:
+      - "5000:5000"
+    volumes:
+      - backend-uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked into the browser bundle — must be reachable from the host.
+        NEXT_PUBLIC_API_URL: http://localhost:5000
+    environment:
+      # Read at runtime (not inlined) for server-side rendering inside this
+      # container, where "localhost" would resolve to itself, not backend.
+      API_URL: http://backend:5000
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  mongo-data:
+  backend-uploads:
