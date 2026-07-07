@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import AuthInitializer from "@/components/providers/AuthInitializer";
-import { Toaster } from "sonner";
+import AppToaster from "@/components/providers/AppToaster";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import QueryProvider from "@/components/providers/QueryProvider";
 
@@ -15,11 +15,14 @@ export const metadata: Metadata = {
   title: "Shoply — Магазин электроники",
   description: "Лучшие товары на Next.js",
   icons: {
-    icon: [{ url: "/icon.png?v=1", type: "image/png" }],
-    apple: [
-      { url: "/apple-icon.png?v=1", sizes: "180x180", type: "image/png" },
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon.ico" },
     ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
@@ -38,12 +41,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthInitializer>
-              <Toaster
-                toastOptions={{
-                  className:
-                    "mb-[calc(70px+env(safe-area-inset-bottom))] md:mb-0",
-                }}
-              />
+              <AppToaster />
               {children}
             </AuthInitializer>
           </QueryProvider>
