@@ -26,8 +26,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY backend/package.json backend/package-lock.json ./backend/
-RUN cd backend && npm ci --omit=dev && mkdir -p uploads
+RUN cd backend && npm ci --omit=dev
 COPY --from=build /app/backend/dist ./backend/dist
+# Seed images (product photos, default avatar) committed to the repo — not
+# just an empty dir, or every /uploads/* request 404s until someone uploads
+# a replacement through the admin panel.
+COPY --from=build /app/backend/uploads ./backend/uploads
 
 COPY frontend/package.json frontend/package-lock.json ./frontend/
 RUN cd frontend && npm ci --omit=dev
