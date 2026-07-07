@@ -17,8 +17,7 @@ A complete online store built from scratch with Next.js and Express — catalog 
 
 ## 🔗 Live Demo
 
-<!-- TODO: verify this is still live and points at a working backend before sharing -->
-https://shoply-cyan.vercel.app
+https://shoply-del4.onrender.com
 
 ## 📸 Screenshots
 
