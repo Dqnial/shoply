@@ -3,6 +3,7 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import api from "@/lib/axios";
 import { useDebounce } from "@/hooks/useDebounce";
+import { setRememberedCatalogUrl } from "@/lib/catalogUrlMemory";
 import { Product } from "@/types";
 
 const ITEMS_PER_PAGE = 6;
@@ -140,6 +141,13 @@ export function useCatalogFilters() {
   useEffect(() => {
     setMaxPriceInput(maxPrice);
   }, [maxPrice]);
+
+  // So a nav link back to "Каталог" can restore this exact filter/sort/page
+  // combination instead of always landing on a bare /catalog.
+  useEffect(() => {
+    const qs = searchParams.toString();
+    setRememberedCatalogUrl(qs ? `${pathname}?${qs}` : pathname);
+  }, [pathname, searchParams]);
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 

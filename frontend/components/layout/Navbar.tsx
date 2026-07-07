@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, Heart, ShoppingCart, Loader2 } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -10,11 +11,21 @@ import { SearchModal } from "../modals/SearchModal";
 import AuthModal from "../modals/AuthModal";
 import UserMenu from "./UserMenu";
 import MobileNav from "./MobileNav";
+import { getRememberedCatalogUrl } from "@/lib/catalogUrlMemory";
 
 export default function Navbar() {
+  const router = useRouter();
   const cartItems = useCartStore((state) => state.cartItems);
   const { user, isChecking, isAuthChecked } = useAuthStore();
   const cartCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
+
+  // Reads the remembered URL fresh at click time (not at render time, when
+  // it could be stale) — restores whatever filters/sort/page were last set
+  // on the catalog page instead of always linking to a bare /catalog.
+  const goToCatalog = (e: React.MouseEvent) => {
+    e.preventDefault();
+    router.push(getRememberedCatalogUrl(), { scroll: false });
+  };
 
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -58,6 +69,7 @@ export default function Navbar() {
           <div className="flex items-center gap-12">
             <Link
               href="/"
+              scroll={false}
               className="text-3xl font-black text-primary tracking-tighter"
             >
               SHOPLY.
@@ -74,6 +86,7 @@ export default function Navbar() {
               <Link
                 href="/catalog"
                 scroll={false}
+                onClick={goToCatalog}
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 КАТАЛОГ

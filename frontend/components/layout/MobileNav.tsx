@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   Home,
@@ -29,9 +29,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { THEME_OPTIONS } from "@/lib/theme";
+import { getRememberedCatalogUrl } from "@/lib/catalogUrlMemory";
 
 export default function MobileNav({ cartCount }: { cartCount: number }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -67,6 +69,19 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
               key={item.href}
               href={item.href}
               scroll={false}
+              onClick={
+                item.href === "/catalog"
+                  ? (e) => {
+                      // Reads the remembered URL fresh at click time —
+                      // restores whatever filters/sort/page were last set
+                      // instead of always landing on a bare /catalog.
+                      e.preventDefault();
+                      router.push(getRememberedCatalogUrl(), {
+                        scroll: false,
+                      });
+                    }
+                  : undefined
+              }
               className="relative flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-95 select-none pointer-events-auto"
             >
               <div className="relative">
