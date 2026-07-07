@@ -28,6 +28,16 @@ export function createApiApp() {
       // Продукты и аватары раздаются с /uploads и грузятся фронтендом с
       // другого origin (localhost:3000) — по умолчанию helmet это блокирует.
       crossOriginResourcePolicy: { policy: "cross-origin" },
+      // helmet's default CSP (script-src 'self', no 'unsafe-inline'/nonce)
+      // blocks Next.js's own inline hydration bootstrap script now that this
+      // same Express app serves the frontend pages too — the page loads
+      // (200 OK) but React never hydrates and no client-side code ever
+      // runs, since the browser silently refuses to execute the blocked
+      // script. A correct CSP for Next.js needs per-request nonces wired
+      // through middleware; skipping CSP entirely is the simpler tradeoff
+      // for now. The other helmet protections (frameguard, HSTS, noSniff,
+      // etc.) stay on — only CSP conflicts with Next.js here.
+      contentSecurityPolicy: false,
     })
   );
   app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
