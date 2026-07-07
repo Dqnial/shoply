@@ -32,7 +32,7 @@ export function AdminSidebar() {
     <Sidebar variant="inset">
       <SidebarHeader className="p-3">
         <Link
-          href="/"
+          href="/admin"
           className="flex min-w-0 items-center gap-2 rounded-lg p-1 transition-colors hover:bg-sidebar-accent"
         >
           <div className="flex min-w-0 flex-col gap-0.5 leading-none">
