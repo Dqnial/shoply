@@ -66,6 +66,7 @@ export default function MobileNav({ cartCount }: { cartCount: number }) {
             <Link
               key={item.href}
               href={item.href}
+              scroll={false}
               className="relative flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-95 select-none pointer-events-auto"
             >
               <div className="relative">

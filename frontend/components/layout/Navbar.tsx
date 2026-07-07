@@ -66,12 +66,14 @@ export default function Navbar() {
             <div className="hidden lg:flex items-center space-x-8 font-semibold text-sm">
               <Link
                 href="/"
+                scroll={false}
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 ГЛАВНАЯ
               </Link>
               <Link
                 href="/catalog"
+                scroll={false}
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 КАТАЛОГ
@@ -96,7 +98,7 @@ export default function Navbar() {
               asChild
               className="hidden md:flex cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
             >
-              <Link href="/favorites">
+              <Link href="/favorites" scroll={false}>
                 <Heart className="w-5! h-5!" />
               </Link>
             </Button>
@@ -107,7 +109,7 @@ export default function Navbar() {
               asChild
               className="hidden md:flex cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl transition-all relative"
             >
-              <Link href="/cart">
+              <Link href="/cart" scroll={false}>
                 <ShoppingCart className="w-5! h-5!" />
                 {cartCount > 0 && (
                   <span className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] min-w-[14px] h-3.5 px-0.5 rounded-full flex items-center justify-center font-bold border border-background">
